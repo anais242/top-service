@@ -24,7 +24,7 @@ export default function PageCataloguePublic() {
 
   const filtres = vehicules.filter((v) => {
     const matchRecherche = `${v.marque} ${v.modele}`.toLowerCase().includes(recherche.toLowerCase());
-    const matchVille = villeFiltre === 'toutes' || v.ville === villeFiltre;
+    const matchVille = villeFiltre === 'toutes' || v.ville === villeFiltre || !v.ville;
     return matchRecherche && matchVille;
   });
 

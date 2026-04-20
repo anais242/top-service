@@ -69,7 +69,7 @@ export default function TableauDeBordGerant() {
         {stats && (
           <>
             {/* KPIs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+            <div className="dash-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '16px', marginBottom: '28px' }}>
               <KPI label="Revenus ce mois" valeur={`${stats.kpis.revenusMois.toLocaleString()} FCFA`} couleur="var(--orange)" />
               <KPI label="Revenus total"   valeur={`${stats.kpis.revenusTotal.toLocaleString()} FCFA`} />
               <KPI label="En attente"      valeur={stats.kpis.reservationsEnAttente}  sub="a traiter" couleur={stats.kpis.reservationsEnAttente > 0 ? '#D97706' : undefined} />
@@ -79,7 +79,7 @@ export default function TableauDeBordGerant() {
             </div>
 
             {/* Graphiques */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '28px' }}>
+            <div className="dash-charts" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '28px' }}>
               <div className="card" style={{ padding: '24px' }}>
                 <p className="titre-section">Revenus — 6 derniers mois</p>
                 <ResponsiveContainer width="100%" height={220}>
@@ -118,7 +118,7 @@ export default function TableauDeBordGerant() {
             </div>
 
             {/* Top vehicules + Dernières reservations */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className="dash-bottom" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div className="card" style={{ padding: '24px' }}>
                 <p className="titre-section">Top vehicules</p>
                 {stats.vehiculesPlusLoues.length === 0 ? (

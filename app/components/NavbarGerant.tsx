@@ -70,7 +70,7 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
             }}>
               {nom ? nom[0].toUpperCase() : 'G'}
             </div>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>
+            <span className="navbar-nom" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>
               {nom ?? 'Gérant'}
             </span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transition: 'transform 0.2s', transform: ouvert ? 'rotate(180deg)' : 'none' }}>

@@ -410,8 +410,29 @@ body {
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
-  .container { padding: 20px 16px; }
-  .container-sm { padding: 32px 16px; }
-  .navbar { padding: 12px 16px; }
-  .card { padding: 24px 18px; }
+  .container     { padding: 20px 16px; }
+  .container-sm  { padding: 32px 16px; }
+  .navbar        { padding: 12px 16px; }
+  .card          { padding: 24px 18px; }
+
+  /* Masque les liens desktop dans la navbar (le dropdown les contient déjà) */
+  .navbar-links  { display: none !important; }
+
+  /* Grilles dashboard → colonne unique */
+  .dash-charts   { grid-template-columns: 1fr !important; }
+  .dash-bottom   { grid-template-columns: 1fr !important; }
+  .dash-kpis     { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Landing — navbar actions */
+  .landing-nav-actions .btn-ghost { display: none; }
+
+  /* "Comment ça marche" — cache les flèches, passe en colonne */
+  .steps-wrapper { flex-direction: column !important; align-items: center !important; }
+  .steps-arrow   { transform: rotate(90deg); }
+
+  /* Masque le nom dans les navbars sur très petit écran */
+  .navbar-nom { display: none; }
+
+  /* Recharts — évite le débordement */
+  .recharts-wrapper { font-size: 11px; }
 }

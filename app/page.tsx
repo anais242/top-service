@@ -6,7 +6,7 @@ export default function Accueil() {
       {/* Navbar */}
       <nav className="navbar">
         <span className="navbar-brand">Top Service</span>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="landing-nav-actions" style={{ display: 'flex', gap: '12px' }}>
           <Link href="/connexion" className="btn-ghost btn" style={{ padding: '8px 20px', fontSize: '0.875rem' }}>
             Connexion
           </Link>
@@ -144,14 +144,14 @@ export default function Accueil() {
             3 étapes pour louer
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', alignItems: 'center' }}>
+          <div className="steps-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
             {[
               { num: '1', titre: 'Créez votre compte', texte: 'Inscription gratuite en 30 secondes, aucune carte requise.' },
               { num: '2', titre: 'Choisissez un véhicule', texte: 'Parcourez la flotte, consultez les détails et les tarifs.' },
               { num: '3', titre: 'Confirmez la réservation', texte: 'Envoyez votre demande, le gérant confirme sous 24h.' },
             ].map(({ num, titre, texte }, i) => (
-              <div key={num} style={{ display: 'contents' }}>
-                <div style={{ textAlign: 'center', padding: '24px 16px' }}>
+              <>
+                <div key={num} style={{ textAlign: 'center', padding: '24px 16px', flex: '1', minWidth: '180px', maxWidth: '240px' }}>
                   <div style={{
                     width: '56px', height: '56px', borderRadius: '50%',
                     background: 'linear-gradient(135deg, var(--orange), var(--orange-dark))',
@@ -166,11 +166,11 @@ export default function Accueil() {
                   <p style={{ margin: 0, color: 'var(--gris)', fontSize: '0.8rem', lineHeight: 1.6 }}>{texte}</p>
                 </div>
                 {i < 2 && (
-                  <div style={{ textAlign: 'center', color: 'var(--orange-light)', fontSize: '1.5rem', fontWeight: 700 }}>
+                  <div key={`arrow-${i}`} className="steps-arrow" style={{ color: 'var(--orange-light)', fontSize: '1.5rem', fontWeight: 700, flexShrink: 0 }}>
                     →
                   </div>
                 )}
-              </div>
+              </>
             ))}
           </div>
         </div>

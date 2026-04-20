@@ -15,6 +15,14 @@ export default function PageCataloguePublic() {
   const [recherche, setRecherche] = useState('');
   const [villeFiltre, setVilleFiltre] = useState<'toutes' | 'brazzaville' | 'pointe-noire'>('toutes');
   const [heureUniquement, setHeureUniquement] = useState(false);
+  const [villeMenuOuvert, setVilleMenuOuvert] = useState(false);
+
+  const VILLES = [
+    { val: 'toutes'       as const, label: 'Toutes les villes' },
+    { val: 'brazzaville'  as const, label: 'Brazzaville' },
+    { val: 'pointe-noire' as const, label: 'Pointe-Noire' },
+  ];
+  const villeLabel = VILLES.find((v) => v.val === villeFiltre)?.label ?? 'Ville';
 
   useEffect(() => {
     fetch('/api/vehicules?statut=disponible&limite=50')
@@ -62,21 +70,50 @@ export default function PageCataloguePublic() {
 
         {/* Filtres */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
-          {([
-            { val: 'toutes',       label: 'Toutes les villes' },
-            { val: 'brazzaville',  label: 'Brazzaville' },
-            { val: 'pointe-noire', label: 'Pointe-Noire' },
-          ] as const).map(({ val, label }) => (
-            <button key={val} onClick={() => setVilleFiltre(val)} style={{
+
+          {/* Dropdown Ville */}
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setVilleMenuOuvert((o) => !o)} style={{
               padding: '8px 20px', borderRadius: '50px', border: '2px solid',
-              borderColor: villeFiltre === val ? 'var(--orange)' : 'rgba(249,115,22,0.2)',
-              background: villeFiltre === val ? 'var(--orange)' : 'white',
-              color: villeFiltre === val ? 'white' : 'var(--brun)',
+              borderColor: villeFiltre !== 'toutes' ? 'var(--orange)' : 'rgba(249,115,22,0.2)',
+              background: villeFiltre !== 'toutes' ? 'var(--orange)' : 'white',
+              color: villeFiltre !== 'toutes' ? 'white' : 'var(--brun)',
               fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: '8px',
             }}>
-              {label}
+              {villeLabel}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transition: 'transform 0.2s', transform: villeMenuOuvert ? 'rotate(180deg)' : 'none' }}>
+                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
-          ))}
+
+            {villeMenuOuvert && (
+              <>
+                {/* Overlay fermeture */}
+                <div onClick={() => setVilleMenuOuvert(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                {/* Menu */}
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+                  background: 'white', borderRadius: '14px', minWidth: '200px', zIndex: 11,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid rgba(249,115,22,0.12)',
+                  overflow: 'hidden', animation: 'slideUp 0.15s ease',
+                }}>
+                  {VILLES.map(({ val, label }) => (
+                    <button key={val} onClick={() => { setVilleFiltre(val); setVilleMenuOuvert(false); }} style={{
+                      display: 'block', width: '100%', padding: '13px 20px', border: 'none', textAlign: 'left',
+                      background: villeFiltre === val ? 'rgba(249,115,22,0.08)' : 'transparent',
+                      color: villeFiltre === val ? 'var(--orange)' : 'var(--brun)',
+                      fontWeight: villeFiltre === val ? 700 : 500, fontSize: '0.9rem', cursor: 'pointer',
+                      borderBottom: val !== 'pointe-noire' ? '1px solid rgba(249,115,22,0.07)' : 'none',
+                      transition: 'background 0.15s',
+                    }}>
+                      {villeFiltre === val && <span style={{ marginRight: '8px' }}>✓</span>}{label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Filtre location à l'heure */}
           <button onClick={() => setHeureUniquement((h) => !h)} style={{

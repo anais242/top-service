@@ -86,7 +86,7 @@ export default function TableauDeBordGerant() {
                   <BarChart data={stats.graphiqueMois}>
                     <XAxis dataKey="mois" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => [`${v.toLocaleString()} FCFA`, 'Revenus']} />
+                    <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} FCFA`, 'Revenus']} />
                     <Bar dataKey="revenus" fill="var(--orange)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

@@ -50,13 +50,12 @@ export async function POST(req: NextRequest) {
     const validation = schemaReservation.safeParse(body);
     if (!validation.success)
       return NextResponse.json<ApiResponse>(
-        { success: false, message: 'Données invalides', errors: validation.error.flatten().fieldErrors },
+        { success: false, message: 'Données invalides', errors: validation.error.flatten().fieldErrors as Record<string, string[]> },
         { status: 422 }
       );
 
-    const { vehiculeId, dateDebut: dD, dateFin: dF, messageClient } = validation.data;
-    const dateDebut = new Date(dD);
-    const dateFin   = new Date(dF);
+    const { vehiculeId, typeLocation, messageClient } = validation.data;
+    const dateDebut = new Date(validation.data.dateDebut);
 
     // Vérification que la date de début est dans le futur
     if (dateDebut < new Date())
@@ -69,28 +68,43 @@ export async function POST(req: NextRequest) {
     if (!vehicule || vehicule.statut !== 'disponible')
       return NextResponse.json<ApiResponse>({ success: false, message: 'Véhicule indisponible' }, { status: 400 });
 
+    // Calcul dateFin, durée et prix selon le type
+    let dateFin: Date;
+    let nombreJours = 0;
+    let nombreHeures: number | null = null;
+    let prixTotal: number;
+
+    if (typeLocation === 'heure') {
+      if (!vehicule.prixParHeure)
+        return NextResponse.json<ApiResponse>({ success: false, message: 'Ce véhicule ne propose pas de location à l\'heure' }, { status: 400 });
+      nombreHeures = (validation.data as { nombreHeures: number }).nombreHeures;
+      dateFin = new Date(dateDebut.getTime() + nombreHeures * 60 * 60 * 1000);
+      prixTotal = nombreHeures * vehicule.prixParHeure;
+    } else {
+      const dF = (validation.data as { dateFin: string }).dateFin;
+      dateFin = new Date(dF);
+      const ms = dateFin.getTime() - dateDebut.getTime();
+      nombreJours = Math.ceil(ms / (1000 * 60 * 60 * 24));
+      prixTotal = nombreJours * vehicule.prixParJour;
+    }
+
     // Vérification conflit de dates
     const conflit = await Reservation.findOne({
       vehicule: vehiculeId,
       statut: { $in: ['en_attente', 'confirmee'] },
-      $or: [
-        { dateDebut: { $lt: dateFin }, dateFin: { $gt: dateDebut } },
-      ],
+      $or: [{ dateDebut: { $lt: dateFin }, dateFin: { $gt: dateDebut } }],
     });
     if (conflit)
-      return NextResponse.json<ApiResponse>({ success: false, message: 'Ces dates sont déjà réservées' }, { status: 409 });
-
-    // Calcul du prix
-    const ms = dateFin.getTime() - dateDebut.getTime();
-    const nombreJours = Math.ceil(ms / (1000 * 60 * 60 * 24));
-    const prixTotal = nombreJours * vehicule.prixParJour;
+      return NextResponse.json<ApiResponse>({ success: false, message: 'Ce créneau est déjà réservé' }, { status: 409 });
 
     const reservation = await Reservation.create({
       vehicule: vehiculeId,
       client: payload.userId,
+      typeLocation,
       dateDebut,
       dateFin,
       nombreJours,
+      nombreHeures,
       prixTotal,
       messageClient,
     });
@@ -101,7 +115,6 @@ export async function POST(req: NextRequest) {
     if (client) {
       const nomVehicule = `${vehicule.marque} ${vehicule.modele}`;
       const fmt = (d: Date) => d.toLocaleDateString('fr-FR');
-      // Emails non bloquants
       envoyerEmailReservationClient(
         client.email, client.nom, nomVehicule,
         fmt(dateDebut), fmt(dateFin), nombreJours, prixTotal

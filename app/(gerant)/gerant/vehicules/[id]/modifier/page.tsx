@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number; couleur: string;
-  prixParJour: number; kilometrage: number; carburant: string; transmission: string;
+  prixParJour: number; prixParHeure?: number; kilometrage: number; carburant: string; transmission: string;
   nombrePlaces: number; description: string; statut: string; photos: string[];
 }
 
@@ -37,6 +37,7 @@ export default function PageModifierVehicule() {
       annee: parseInt(form.get('annee') as string),
       couleur: form.get('couleur'),
       prixParJour: parseFloat(form.get('prixParJour') as string),
+      prixParHeure: form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
       kilometrage: parseInt(form.get('kilometrage') as string),
       carburant: form.get('carburant'), transmission: form.get('transmission'),
       nombrePlaces: parseInt(form.get('nombrePlaces') as string),
@@ -110,6 +111,10 @@ export default function PageModifierVehicule() {
             <div className="form-group"><label>Année</label><input name="annee" type="number" required defaultValue={vehicule.annee} /></div>
             <div className="form-group"><label>Couleur</label><input name="couleur" required defaultValue={vehicule.couleur} /></div>
             <div className="form-group"><label>Prix / jour (FCFA)</label><input name="prixParJour" type="number" required defaultValue={vehicule.prixParJour} /></div>
+            <div className="form-group">
+              <label>Prix / heure (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>
+              <input name="prixParHeure" type="number" min="0" placeholder="10000" defaultValue={vehicule.prixParHeure ?? ''} />
+            </div>
             <div className="form-group"><label>Kilométrage</label><input name="kilometrage" type="number" required defaultValue={vehicule.kilometrage} /></div>
             <div className="form-group">
               <label>Carburant</label>

@@ -10,6 +10,7 @@ export interface IVehicule extends Document {
   annee: number;
   couleur: string;
   prixParJour: number;
+  prixParHeure?: number;
   kilometrage: number;
   carburant: Carburant;
   transmission: Transmission;
@@ -28,6 +29,7 @@ const vehiculeSchema = new Schema<IVehicule>(
     annee:         { type: Number, required: true, min: 1990, max: new Date().getFullYear() + 1 },
     couleur:       { type: String, required: true, trim: true, maxlength: 30 },
     prixParJour:   { type: Number, required: true, min: 0 },
+    prixParHeure:  { type: Number, min: 0, default: null },
     kilometrage:   { type: Number, required: true, min: 0 },
     carburant:     { type: String, enum: ['essence', 'diesel', 'electrique', 'hybride'], required: true },
     transmission:  { type: String, enum: ['manuelle', 'automatique'], required: true },

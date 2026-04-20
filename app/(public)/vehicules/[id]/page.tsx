@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number; couleur: string;
-  prixParJour: number; kilometrage: number; carburant: string; transmission: string;
+  prixParJour: number; prixParHeure?: number; kilometrage: number; carburant: string; transmission: string;
   nombrePlaces: number; description: string; photos: string[];
 }
 
@@ -22,8 +22,10 @@ export default function PageDetailPublic() {
   const [plages, setPlages] = useState<PlageOccupee[]>([]);
 
   // Formulaire réservation
+  const [typeLocation, setTypeLocation] = useState<'jour' | 'heure'>('jour');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
+  const [nombreHeures, setNombreHeures] = useState(1);
   const [message, setMessage] = useState('');
   const [erreurForm, setErreurForm] = useState('');
   const [soumission, setSoumission] = useState(false);
@@ -53,16 +55,20 @@ export default function PageDetailPublic() {
 
   async function handleReserver() {
     setErreurForm('');
-    if (!dateDebut || !dateFin) { setErreurForm('Sélectionnez les dates'); return; }
-    if (calculerJours() < 1) { setErreurForm('La date de fin doit être après la date de début'); return; }
+    if (!dateDebut) { setErreurForm('Sélectionnez une date'); return; }
+    if (typeLocation === 'jour' && !dateFin) { setErreurForm('Sélectionnez la date de fin'); return; }
+    if (typeLocation === 'jour' && calculerJours() < 1) { setErreurForm('La date de fin doit être après la date de début'); return; }
 
-    // Vérifier si connecté
     setSoumission(true);
     try {
+      const body = typeLocation === 'heure'
+        ? { vehiculeId: id, typeLocation: 'heure', dateDebut, nombreHeures, messageClient: message }
+        : { vehiculeId: id, typeLocation: 'jour', dateDebut, dateFin, messageClient: message };
+
       const res = await fetch('/api/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vehiculeId: id, dateDebut, dateFin, messageClient: message }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
 
@@ -85,7 +91,9 @@ export default function PageDetailPublic() {
   if (!vehicule) return <div className="container"><div className="erreur">Véhicule introuvable</div></div>;
 
   const jours = calculerJours();
-  const prixTotal = jours * vehicule.prixParJour;
+  const prixTotal = typeLocation === 'heure'
+    ? nombreHeures * (vehicule.prixParHeure ?? 0)
+    : jours * vehicule.prixParJour;
 
   const infos = [
     { label: 'Année', val: vehicule.annee },
@@ -138,35 +146,83 @@ export default function PageDetailPublic() {
 
         {/* Colonne droite — formulaire réservation */}
         <div className="card" style={{ position: 'sticky', top: '20px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <span style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1a56db' }}>{vehicule.prixParJour.toLocaleString()} FCFA</span>
-            <span style={{ color: '#6b7280', fontSize: '0.875rem' }}> /jour</span>
+          {/* Prix */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--orange)' }}>{vehicule.prixParJour.toLocaleString()} FCFA</span>
+              <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}> /jour</span>
+            </div>
+            {vehicule.prixParHeure && (
+              <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--vert)' }}>{vehicule.prixParHeure.toLocaleString()} FCFA</span>
+                <span style={{ color: 'var(--gris)', fontSize: '0.8rem' }}> /heure</span>
+              </div>
+            )}
           </div>
+
+          {/* Toggle jour / heure */}
+          {vehicule.prixParHeure && (
+            <div style={{ display: 'flex', background: 'var(--gris-light)', borderRadius: '10px', padding: '4px', marginBottom: '16px', gap: '4px' }}>
+              {(['jour', 'heure'] as const).map((t) => (
+                <button key={t} onClick={() => { setTypeLocation(t); setDateDebut(''); setDateFin(''); }}
+                  style={{
+                    flex: 1, padding: '8px', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                    fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.2s',
+                    background: typeLocation === t ? 'white' : 'transparent',
+                    color: typeLocation === t ? 'var(--orange)' : 'var(--gris)',
+                    boxShadow: typeLocation === t ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                  }}>
+                  Par {t}
+                </button>
+              ))}
+            </div>
+          )}
 
           {erreurForm && <div className="erreur" style={{ marginBottom: '12px' }}>{erreurForm}</div>}
 
-          <div className="form-group">
-            <label>Date de début</label>
-            <input type="date" min={aujourd_hui} value={dateDebut}
-              onChange={(e) => { setDateDebut(e.target.value); setDateFin(''); }}
-            />
-          </div>
-          <div className="form-group">
-            <label>Date de fin</label>
-            <input type="date" min={dateDebut || aujourd_hui} value={dateFin}
-              onChange={(e) => setDateFin(e.target.value)}
-              disabled={!dateDebut}
-            />
-          </div>
+          {typeLocation === 'jour' ? (
+            <>
+              <div className="form-group">
+                <label>Date de début</label>
+                <input type="date" min={aujourd_hui} value={dateDebut}
+                  onChange={(e) => { setDateDebut(e.target.value); setDateFin(''); }} />
+              </div>
+              <div className="form-group">
+                <label>Date de fin</label>
+                <input type="date" min={dateDebut || aujourd_hui} value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)} disabled={!dateDebut} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <label>Date et heure de début</label>
+                <input type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Nombre d'heures</label>
+                <select value={nombreHeures} onChange={(e) => setNombreHeures(Number(e.target.value))}>
+                  {[1,2,3,4,5,6,7,8,10,12,24].map((h) => (
+                    <option key={h} value={h}>{h} heure{h > 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-          {jours > 0 && (
-            <div style={{ background: '#f0f9ff', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+          {prixTotal > 0 && (
+            <div style={{ background: 'rgba(249,115,22,0.06)', borderRadius: '10px', padding: '12px', marginBottom: '16px', border: '1px solid rgba(249,115,22,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{jours} jour{jours > 1 ? 's' : ''} × {vehicule.prixParJour.toLocaleString()} FCFA</span>
+                <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>
+                  {typeLocation === 'heure'
+                    ? `${nombreHeures} heure${nombreHeures > 1 ? 's' : ''} × ${vehicule.prixParHeure!.toLocaleString()} FCFA`
+                    : `${jours} jour${jours > 1 ? 's' : ''} × ${vehicule.prixParJour.toLocaleString()} FCFA`}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
                 <span>Total</span>
-                <span style={{ color: '#1a56db' }}>{prixTotal.toLocaleString()} FCFA</span>
+                <span style={{ color: 'var(--orange)' }}>{prixTotal.toLocaleString()} FCFA</span>
               </div>
             </div>
           )}

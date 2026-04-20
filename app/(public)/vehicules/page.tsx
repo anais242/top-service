@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number;
-  prixParJour: number; carburant: string; transmission: string;
+  prixParJour: number; prixParHeure?: number; carburant: string; transmission: string;
   nombrePlaces: number; photos: string[];
 }
 
@@ -122,8 +122,15 @@ export default function PageCataloguePublic() {
                   {v.annee} · {v.carburant} · {v.transmission} · {v.nombrePlaces} places
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="car-card-price">
-                    {v.prixParJour.toLocaleString()} FCFA <span>/jour</span>
+                  <div>
+                    <div className="car-card-price">
+                      {v.prixParJour.toLocaleString()} FCFA <span>/jour</span>
+                    </div>
+                    {v.prixParHeure && (
+                      <div style={{ fontSize: '0.78rem', color: 'var(--vert)', fontWeight: 600, marginTop: '2px' }}>
+                        {v.prixParHeure.toLocaleString()} FCFA /heure
+                      </div>
+                    )}
                   </div>
                   <span style={{ fontSize: '0.8rem', color: 'var(--orange)', fontWeight: 600 }}>Réserver →</span>
                 </div>

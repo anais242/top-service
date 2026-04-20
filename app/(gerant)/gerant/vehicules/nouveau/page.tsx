@@ -24,6 +24,7 @@ export default function PageNouveauVehicule() {
       annee:        parseInt(form.get('annee') as string),
       couleur:      form.get('couleur') as string,
       prixParJour:  parseFloat(form.get('prixParJour') as string),
+      prixParHeure: form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
       kilometrage:  parseInt(form.get('kilometrage') as string),
       carburant:    form.get('carburant') as string,
       transmission: form.get('transmission') as string,
@@ -140,6 +141,10 @@ export default function PageNouveauVehicule() {
             <div className="form-group">
               <label>Prix / jour (FCFA)</label>
               <input name="prixParJour" type="number" required min="0" placeholder="25000" />
+            </div>
+            <div className="form-group">
+              <label>Prix / heure (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>
+              <input name="prixParHeure" type="number" min="0" placeholder="10000" />
             </div>
             <div className="form-group">
               <label>Kilométrage</label>

@@ -14,6 +14,7 @@ export default function PageCataloguePublic() {
   const [chargement, setChargement] = useState(true);
   const [recherche, setRecherche] = useState('');
   const [villeFiltre, setVilleFiltre] = useState<'toutes' | 'brazzaville' | 'pointe-noire'>('toutes');
+  const [heureUniquement, setHeureUniquement] = useState(false);
 
   useEffect(() => {
     fetch('/api/vehicules?statut=disponible&limite=50')
@@ -25,7 +26,8 @@ export default function PageCataloguePublic() {
   const filtres = vehicules.filter((v) => {
     const matchRecherche = `${v.marque} ${v.modele}`.toLowerCase().includes(recherche.toLowerCase());
     const matchVille = villeFiltre === 'toutes' || v.ville === villeFiltre || !v.ville;
-    return matchRecherche && matchVille;
+    const matchHeure = !heureUniquement || !!v.prixParHeure;
+    return matchRecherche && matchVille && matchHeure;
   });
 
   return (
@@ -58,7 +60,7 @@ export default function PageCataloguePublic() {
           Catalogue complet · Réservation en ligne · Confirmation rapide
         </p>
 
-        {/* Filtre ville */}
+        {/* Filtres */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
           {([
             { val: 'toutes',       label: 'Toutes les villes' },
@@ -75,6 +77,17 @@ export default function PageCataloguePublic() {
               {label}
             </button>
           ))}
+
+          {/* Filtre location à l'heure */}
+          <button onClick={() => setHeureUniquement((h) => !h)} style={{
+            padding: '8px 20px', borderRadius: '50px', border: '2px solid',
+            borderColor: heureUniquement ? 'var(--vert)' : 'rgba(22,163,74,0.25)',
+            background: heureUniquement ? 'var(--vert)' : 'white',
+            color: heureUniquement ? 'white' : 'var(--brun)',
+            fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
+          }}>
+            Disponible à l'heure
+          </button>
         </div>
 
         {/* Barre de recherche */}

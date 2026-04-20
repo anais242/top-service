@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+npm-debug.log*
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+Cloudinary.txt
+Mongo ID.txt
+UPSTASH_.txt
+resend.txt
+*.txt
+!README.txt

@@ -23,6 +23,7 @@ export default function PageNouveauVehicule() {
       modele:       form.get('modele') as string,
       annee:        parseInt(form.get('annee') as string),
       couleur:      form.get('couleur') as string,
+      ville:        form.get('ville') as string,
       prixParJour:  parseFloat(form.get('prixParJour') as string),
       prixParHeure: form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
       kilometrage:  parseInt(form.get('kilometrage') as string),
@@ -137,6 +138,13 @@ export default function PageNouveauVehicule() {
             <div className="form-group">
               <label>Couleur</label>
               <input name="couleur" required placeholder="Blanc" />
+            </div>
+            <div className="form-group">
+              <label>Ville</label>
+              <select name="ville" required>
+                <option value="brazzaville">Brazzaville</option>
+                <option value="pointe-noire">Pointe-Noire</option>
+              </select>
             </div>
             <div className="form-group">
               <label>Prix / jour (FCFA)</label>

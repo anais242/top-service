@@ -6,13 +6,14 @@ import Link from 'next/link';
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number;
   prixParJour: number; prixParHeure?: number; carburant: string; transmission: string;
-  nombrePlaces: number; photos: string[];
+  nombrePlaces: number; photos: string[]; ville: string;
 }
 
 export default function PageCataloguePublic() {
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [chargement, setChargement] = useState(true);
   const [recherche, setRecherche] = useState('');
+  const [villeFiltre, setVilleFiltre] = useState<'toutes' | 'brazzaville' | 'pointe-noire'>('toutes');
 
   useEffect(() => {
     fetch('/api/vehicules?statut=disponible&limite=50')
@@ -21,9 +22,11 @@ export default function PageCataloguePublic() {
       .finally(() => setChargement(false));
   }, []);
 
-  const filtres = vehicules.filter((v) =>
-    `${v.marque} ${v.modele}`.toLowerCase().includes(recherche.toLowerCase())
-  );
+  const filtres = vehicules.filter((v) => {
+    const matchRecherche = `${v.marque} ${v.modele}`.toLowerCase().includes(recherche.toLowerCase());
+    const matchVille = villeFiltre === 'toutes' || v.ville === villeFiltre;
+    return matchRecherche && matchVille;
+  });
 
   return (
     <>
@@ -54,6 +57,25 @@ export default function PageCataloguePublic() {
         <p style={{ color: 'var(--gris)', fontSize: '1rem', marginBottom: '28px' }}>
           Catalogue complet · Réservation en ligne · Confirmation rapide
         </p>
+
+        {/* Filtre ville */}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {([
+            { val: 'toutes',       label: 'Toutes les villes' },
+            { val: 'brazzaville',  label: 'Brazzaville' },
+            { val: 'pointe-noire', label: 'Pointe-Noire' },
+          ] as const).map(({ val, label }) => (
+            <button key={val} onClick={() => setVilleFiltre(val)} style={{
+              padding: '8px 20px', borderRadius: '50px', border: '2px solid',
+              borderColor: villeFiltre === val ? 'var(--orange)' : 'rgba(249,115,22,0.2)',
+              background: villeFiltre === val ? 'var(--orange)' : 'white',
+              color: villeFiltre === val ? 'white' : 'var(--brun)',
+              fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
 
         {/* Barre de recherche */}
         <div style={{ maxWidth: '480px', margin: '0 auto', position: 'relative' }}>
@@ -112,8 +134,11 @@ export default function PageCataloguePublic() {
                 ) : (
                   <div style={{ width: '100%', height: '200px', background: 'var(--gris-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gris)', fontSize: '0.875rem' }}>Pas de photo</div>
                 )}
-                <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
                   <span className="badge badge-vert">Disponible</span>
+                  <span className="badge badge-bleu" style={{ fontSize: '0.65rem' }}>
+                    {v.ville === 'pointe-noire' ? 'Pointe-Noire' : 'Brazzaville'}
+                  </span>
                 </div>
               </div>
               <div className="car-card-body">

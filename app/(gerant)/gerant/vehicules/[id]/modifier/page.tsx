@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface Vehicule {
-  _id: string; marque: string; modele: string; annee: number; couleur: string;
+  _id: string; marque: string; modele: string; annee: number; couleur: string; ville: string;
   prixParJour: number; prixParHeure?: number; kilometrage: number; carburant: string; transmission: string;
   nombrePlaces: number; description: string; statut: string; photos: string[];
 }
@@ -36,6 +36,7 @@ export default function PageModifierVehicule() {
       marque: form.get('marque'), modele: form.get('modele'),
       annee: parseInt(form.get('annee') as string),
       couleur: form.get('couleur'),
+      ville: form.get('ville'),
       prixParJour: parseFloat(form.get('prixParJour') as string),
       prixParHeure: form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
       kilometrage: parseInt(form.get('kilometrage') as string),
@@ -110,6 +111,13 @@ export default function PageModifierVehicule() {
             <div className="form-group"><label>Modèle</label><input name="modele" required defaultValue={vehicule.modele} /></div>
             <div className="form-group"><label>Année</label><input name="annee" type="number" required defaultValue={vehicule.annee} /></div>
             <div className="form-group"><label>Couleur</label><input name="couleur" required defaultValue={vehicule.couleur} /></div>
+            <div className="form-group">
+              <label>Ville</label>
+              <select name="ville" defaultValue={vehicule.ville}>
+                <option value="brazzaville">Brazzaville</option>
+                <option value="pointe-noire">Pointe-Noire</option>
+              </select>
+            </div>
             <div className="form-group"><label>Prix / jour (FCFA)</label><input name="prixParJour" type="number" required defaultValue={vehicule.prixParJour} /></div>
             <div className="form-group">
               <label>Prix / heure (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>

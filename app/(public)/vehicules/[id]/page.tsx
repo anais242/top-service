@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Vehicule {
-  _id: string; marque: string; modele: string; annee: number; couleur: string;
+  _id: string; marque: string; modele: string; annee: number; couleur: string; ville: string;
   prixParJour: number; prixParHeure?: number; kilometrage: number; carburant: string; transmission: string;
   nombrePlaces: number; description: string; photos: string[];
 }
@@ -96,6 +96,7 @@ export default function PageDetailPublic() {
     : jours * vehicule.prixParJour;
 
   const infos = [
+    { label: 'Ville', val: vehicule.ville === 'pointe-noire' ? 'Pointe-Noire' : 'Brazzaville' },
     { label: 'Année', val: vehicule.annee },
     { label: 'Couleur', val: vehicule.couleur },
     { label: 'Carburant', val: vehicule.carburant },

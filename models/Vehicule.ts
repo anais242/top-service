@@ -3,12 +3,14 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 export type StatutVehicule = 'disponible' | 'loue' | 'maintenance';
 export type Carburant = 'essence' | 'diesel' | 'electrique' | 'hybride';
 export type Transmission = 'manuelle' | 'automatique';
+export type Ville = 'brazzaville' | 'pointe-noire';
 
 export interface IVehicule extends Document {
   marque: string;
   modele: string;
   annee: number;
   couleur: string;
+  ville: Ville;
   prixParJour: number;
   prixParHeure?: number;
   kilometrage: number;
@@ -28,6 +30,7 @@ const vehiculeSchema = new Schema<IVehicule>(
     modele:        { type: String, required: true, trim: true, maxlength: 50 },
     annee:         { type: Number, required: true, min: 1990, max: new Date().getFullYear() + 1 },
     couleur:       { type: String, required: true, trim: true, maxlength: 30 },
+    ville:         { type: String, enum: ['brazzaville', 'pointe-noire'], required: true, default: 'brazzaville' },
     prixParJour:   { type: Number, required: true, min: 0 },
     prixParHeure:  { type: Number, min: 0, default: null },
     kilometrage:   { type: Number, required: true, min: 0 },

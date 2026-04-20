@@ -56,9 +56,9 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
     toJSON: {
       // Supprime le mot de passe et __v de toutes les réponses JSON
-      transform: (_, ret) => {
-        delete ret.motDePasse;
-        delete ret.__v;
+      transform: (_, ret: Record<string, unknown>) => {
+        ret.motDePasse = undefined;
+        ret.__v = undefined;
         return ret;
       },
     },

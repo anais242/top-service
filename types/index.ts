@@ -10,9 +10,9 @@ export interface JWTPayload {
 }
 
 // ─── Réponse API standardisée ─────────────────────────────────────────────────
-export interface ApiResponse<T = null> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
-  message: string;
+  message?: string;
   data?: T;
   errors?: Record<string, string[]>;
 }

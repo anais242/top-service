@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function PageConnexion() {
+function FormulaireConnexion() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const retour = searchParams.get('retour');
@@ -37,7 +37,6 @@ export default function PageConnexion() {
 
   return (
     <div className="container-sm">
-      {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Link href="/vehicules" className="navbar-brand" style={{ fontSize: '2rem' }}>
           Top Service
@@ -83,5 +82,13 @@ export default function PageConnexion() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function PageConnexion() {
+  return (
+    <Suspense>
+      <FormulaireConnexion />
+    </Suspense>
   );
 }

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { supprimerCookiesAuth } from '@/lib/auth/cookies';
 import type { ApiResponse } from '@/types';

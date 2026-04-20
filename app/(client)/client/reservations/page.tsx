@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -19,7 +19,7 @@ const STATUT: Record<string, { label: string; bg: string; color: string }> = {
   terminee:   { label: 'Terminée',    bg: '#e0e7ff', color: '#3730a3' },
 };
 
-export default function PageReservationsClient() {
+function ContenuReservations() {
   const searchParams = useSearchParams();
   const succes = searchParams.get('succes');
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -111,5 +111,13 @@ export default function PageReservationsClient() {
         })}
       </div>
     </div>
+  );
+}
+
+export default function PageReservationsClient() {
+  return (
+    <Suspense>
+      <ContenuReservations />
+    </Suspense>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import NavbarPublique from '@/app/components/NavbarPublique';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number;
@@ -40,6 +41,8 @@ export default function PageCataloguePublic() {
 
   return (
     <>
+      <NavbarPublique />
+
       {/* Hero */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(249,115,22,0.08) 0%, rgba(22,163,74,0.06) 100%)',
@@ -47,18 +50,6 @@ export default function PageCataloguePublic() {
         padding: '48px 32px 40px',
         textAlign: 'center',
       }}>
-        {/* Navbar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto 40px' }}>
-          <span className="navbar-brand" style={{ fontSize: '1.5rem' }}>Top Service</span>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Link href="/connexion" className="btn-ghost btn" style={{ padding: '8px 20px', fontSize: '0.875rem' }}>
-              Connexion
-            </Link>
-            <Link href="/inscription" className="btn" style={{ padding: '8px 20px', fontSize: '0.875rem' }}>
-              Créer un compte
-            </Link>
-          </div>
-        </div>
 
         <h1 className="titre-hero" style={{ marginBottom: '12px' }}>
           Louez le véhicule<br />

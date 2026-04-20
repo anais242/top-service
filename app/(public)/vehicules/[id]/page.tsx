@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import NavbarPublique from '@/app/components/NavbarPublique';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number; couleur: string; ville: string;
@@ -106,10 +107,11 @@ export default function PageDetailPublic() {
   ];
 
   return (
+    <>
+    <NavbarPublique />
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <Link href="/vehicules" style={{ color: '#6b7280', textDecoration: 'none' }}>← Retour au catalogue</Link>
-        <Link href="/connexion" style={{ color: '#1a56db', textDecoration: 'none', fontSize: '0.875rem' }}>Se connecter</Link>
+      <div style={{ marginBottom: '16px' }}>
+        <Link href="/vehicules" style={{ color: 'var(--gris)', textDecoration: 'none', fontSize: '0.9rem' }}>← Retour au catalogue</Link>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
@@ -244,5 +246,6 @@ export default function PageDetailPublic() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -2,12 +2,13 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db/mongodb';
 import User from '@/models/User';
+import Reservation from '@/models/Reservation';
 import { verifierAccessToken } from '@/lib/auth/jwt';
 import { COOKIE_ACCESS } from '@/lib/auth/cookies';
 import type { ApiResponse } from '@/types';
 import bcrypt from 'bcryptjs';
 
-// GET /api/gerant/chauffeurs — liste tous les chauffeurs
+// GET /api/gerant/chauffeurs — liste tous les chauffeurs avec flag estOccupe
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(COOKIE_ACCESS)?.value;
   const payload = token ? await verifierAccessToken(token) : null;
@@ -16,7 +17,18 @@ export async function GET(req: NextRequest) {
 
   await connectDB();
   const chauffeurs = await User.find({ role: 'chauffeur' }).select('-motDePasse').sort({ createdAt: -1 }).lean();
-  return NextResponse.json<ApiResponse>({ success: true, data: chauffeurs });
+
+  // Détecter les chauffeurs déjà sur une réservation confirmée active
+  const ids = chauffeurs.map((c) => c._id);
+  const reservationsActives = await Reservation.find({
+    chauffeur: { $in: ids },
+    statut: 'confirmee',
+    statutChauffeur: { $in: ['en_attente', 'acceptee'] },
+  }).select('chauffeur').lean();
+  const occupes = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
+
+  const data = chauffeurs.map((c) => ({ ...c, estOccupe: occupes.has(c._id.toString()) }));
+  return NextResponse.json<ApiResponse>({ success: true, data });
 }
 
 // POST /api/gerant/chauffeurs — créer un compte chauffeur

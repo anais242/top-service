@@ -8,6 +8,7 @@ interface Chauffeur {
   email: string;
   telephone: string;
   actif: boolean;
+  estOccupe: boolean;
   createdAt: string;
 }
 
@@ -124,15 +125,15 @@ export default function PageChauffeurs() {
               <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: '0.95rem' }}>{c.nom}</p>
               <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--gris)' }}>{c.telephone} · {c.email}</p>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
               <span style={{
-                background: c.actif ? '#dcfce7' : '#f3f4f6',
-                color: c.actif ? '#166534' : '#6b7280',
+                background: c.estOccupe ? '#fef9c3' : c.actif ? '#dcfce7' : '#f3f4f6',
+                color: c.estOccupe ? '#713f12' : c.actif ? '#166534' : '#6b7280',
                 padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
               }}>
-                {c.actif ? 'Actif' : 'Inactif'}
+                {c.estOccupe ? 'En mission' : c.actif ? 'Disponible' : 'Inactif'}
               </span>
-              <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--gris)' }}>
                 Depuis le {new Date(c.createdAt).toLocaleDateString('fr-FR')}
               </p>
             </div>

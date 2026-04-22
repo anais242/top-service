@@ -75,6 +75,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         return NextResponse.json<ApiResponse>({ success: false, message: 'Statut invalide' }, { status: 400 });
       reservation.statut = body.statut;
       if (body.messageGerant) reservation.messageGerant = body.messageGerant;
+
+      // Auto-assignation du premier chauffeur libre si réservation avec chauffeur
+      if (body.statut === 'confirmee' && reservation.avecChauffeur && !reservation.chauffeur) {
+        const reservationsActives = await Reservation.find({
+          statut: 'confirmee',
+          statutChauffeur: { $in: ['en_attente', 'acceptee'] },
+          chauffeur: { $ne: null },
+        }).select('chauffeur').lean();
+        const occupe = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
+
+        const chauffeurLibre = await User.findOne({ role: 'chauffeur', actif: true, _id: { $nin: [...occupe] } }).lean();
+        if (chauffeurLibre) {
+          reservation.chauffeur = chauffeurLibre._id;
+          reservation.statutChauffeur = 'en_attente';
+        }
+      }
     }
     // Client peut uniquement annuler ses propres réservations en attente
     else if (payload.role === 'client') {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-interface Chauffeur { _id: string; nom: string; }
+interface Chauffeur { _id: string; nom: string; estOccupe?: boolean; }
 interface VehiculeOption { _id: string; marque: string; modele: string; annee: number; }
 
 interface Reservation {
@@ -53,8 +53,20 @@ export default function PageReservationsGerant() {
       body: JSON.stringify({ statut, messageGerant: messageGerant[id] || '' }),
     });
     const json = await res.json();
-    if (json.success) setReservations((r) => r.map((x) => x._id === id ? { ...x, statut } : x));
-    else alert(json.message);
+    if (json.success) {
+      // Si confirmation avec auto-assignation chauffeur, mettre à jour l'état
+      const updated = json.data;
+      setReservations((r) => r.map((x) => x._id === id
+        ? { ...x, statut, chauffeur: updated.chauffeur ?? x.chauffeur, statutChauffeur: updated.statutChauffeur ?? x.statutChauffeur }
+        : x
+      ));
+      // Rafraîchir la liste des chauffeurs pour mettre à jour estOccupe
+      if (statut === 'confirmee') {
+        fetch('/api/gerant/chauffeurs').then((r) => r.json()).then((j) => { if (j.success) setChauffeurs(j.data); });
+      }
+    } else {
+      alert(json.message);
+    }
   }
 
   async function assignerChauffeur(id: string) {
@@ -70,6 +82,8 @@ export default function PageReservationsGerant() {
         ? { ...x, chauffeur: chauffeur ? { _id: chauffeur._id, nom: chauffeur.nom } : null, statutChauffeur: chauffeurId ? 'en_attente' : 'non_attribue' }
         : x
       ));
+      // Rafraîchir estOccupe sur les chauffeurs
+      fetch('/api/gerant/chauffeurs').then((r) => r.json()).then((j) => { if (j.success) setChauffeurs(j.data); });
     } else {
       alert(json.message);
     }
@@ -235,7 +249,9 @@ export default function PageReservationsGerant() {
                       >
                         <option value="">— Sélectionner un chauffeur —</option>
                         {chauffeurs.map((c) => (
-                          <option key={c._id} value={c._id}>{c.nom}</option>
+                          <option key={c._id} value={c._id} disabled={!!c.estOccupe}>
+                            {c.nom}{c.estOccupe ? ' (occupé)' : ''}
+                          </option>
                         ))}
                       </select>
                       <button

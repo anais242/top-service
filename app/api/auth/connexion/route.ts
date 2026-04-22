@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       email: utilisateur.email,
       telephone: utilisateur.telephone,
       role: utilisateur.role,
-      createdAt: utilisateur.createdAt.toISOString(),
+      createdAt: utilisateur.createdAt?.toISOString() ?? new Date().toISOString(),
     };
 
     // 9. Pose des cookies httpOnly et retour

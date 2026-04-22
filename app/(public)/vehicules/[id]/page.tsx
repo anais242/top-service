@@ -31,7 +31,7 @@ export default function PageDetailPublic() {
   const [dateFin, setDateFin] = useState('');
   const [nombreHeures, setNombreHeures] = useState(1);
   const [avecChauffeur, setAvecChauffeur] = useState(false);
-  const [plageChauffeur, setPlageChauffeur] = useState<'jour' | 'nuit'>('jour');
+  const [plagesChauffeur, setPlagesChauffeur] = useState<Set<'jour' | 'nuit'>>(new Set<'jour' | 'nuit'>(['jour']));
   const [message, setMessage] = useState('');
   const [cguAcceptees, setCguAcceptees] = useState(false);
   const [erreurForm, setErreurForm] = useState('');
@@ -99,16 +99,19 @@ export default function PageDetailPublic() {
 
   const jours = calculerJours();
 
-  // Tarif chauffeur selon la plage choisie par le client
-  const tarifChauffeurApplicable = plageChauffeur === 'nuit' ? CHAUFFEUR_NUIT : CHAUFFEUR_JOUR;
-  const labelTarifChauffeur = plageChauffeur === 'nuit'
-    ? `Nuit (21h–6h) : ${CHAUFFEUR_NUIT.toLocaleString()} FCFA`
-    : `Jour (7h–21h) : ${CHAUFFEUR_JOUR.toLocaleString()} FCFA`;
+  // Tarif chauffeur selon les plages sélectionnées
+  const tarifChauffeurParPeriode =
+    (plagesChauffeur.has('jour') ? CHAUFFEUR_JOUR : 0) +
+    (plagesChauffeur.has('nuit') ? CHAUFFEUR_NUIT : 0);
+  const labelTarifChauffeur = [
+    plagesChauffeur.has('jour') && `Jour (7h–21h) : ${CHAUFFEUR_JOUR.toLocaleString()} FCFA`,
+    plagesChauffeur.has('nuit') && `Nuit (21h–6h) : ${CHAUFFEUR_NUIT.toLocaleString()} FCFA`,
+  ].filter(Boolean).join(' + ');
 
   const prixBaseChauffeur = avecChauffeur
     ? jours > 0
-      ? jours * tarifChauffeurApplicable
-      : tarifChauffeurApplicable
+      ? jours * tarifChauffeurParPeriode
+      : tarifChauffeurParPeriode
     : 0;
   const prixTotal = typeLocation === 'heure'
     ? nombreHeures * (vehicule.prixParHeure ?? 0) + prixBaseChauffeur
@@ -261,20 +264,30 @@ export default function PageDetailPublic() {
                   {([
                     { val: 'jour' as const, label: 'Jour', sous: `7h–21h · ${CHAUFFEUR_JOUR.toLocaleString()} FCFA` },
                     { val: 'nuit' as const, label: 'Nuit', sous: `21h–6h · ${CHAUFFEUR_NUIT.toLocaleString()} FCFA` },
-                  ]).map(({ val, label, sous }) => (
-                    <button key={val} onClick={() => setPlageChauffeur(val)}
-                      style={{
-                        padding: '8px 6px', borderRadius: '8px', cursor: 'pointer',
-                        border: plageChauffeur === val ? '2px solid #1B3B8A' : '2px solid #E5E7EB',
-                        background: plageChauffeur === val ? 'rgba(27,59,138,0.07)' : '#FAFAFA',
-                        fontWeight: 600, fontSize: '0.8rem', textAlign: 'center',
-                        color: plageChauffeur === val ? '#1B3B8A' : 'var(--gris)',
-                        transition: 'all 0.2s',
-                      }}>
-                      <div>{label}</div>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 400, marginTop: '2px' }}>{sous}</div>
-                    </button>
-                  ))}
+                  ]).map(({ val, label, sous }) => {
+                    const actif = plagesChauffeur.has(val);
+                    return (
+                      <button key={val} type="button" onClick={() => {
+                        setPlagesChauffeur((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(val) && next.size > 1) next.delete(val);
+                          else next.add(val);
+                          return next;
+                        });
+                      }}
+                        style={{
+                          padding: '8px 6px', borderRadius: '8px', cursor: 'pointer',
+                          border: actif ? '2px solid #1B3B8A' : '2px solid #E5E7EB',
+                          background: actif ? 'rgba(27,59,138,0.07)' : '#FAFAFA',
+                          fontWeight: 600, fontSize: '0.8rem', textAlign: 'center',
+                          color: actif ? '#1B3B8A' : 'var(--gris)',
+                          transition: 'all 0.2s',
+                        }}>
+                        <div>{label}</div>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 400, marginTop: '2px' }}>{sous}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

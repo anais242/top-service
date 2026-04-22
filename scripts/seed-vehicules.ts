@@ -1,79 +1,170 @@
 import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
+import { v2 as cloudinary } from 'cloudinary';
+import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) { console.error('MONGODB_URI manquant'); process.exit(1); }
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const VehiculeSchema = new mongoose.Schema({
   marque: String, modele: String, annee: Number, couleur: String,
+  ville: { type: String, default: 'brazzaville' },
   prixParJour: Number, kilometrage: Number, carburant: String,
   transmission: String, nombrePlaces: Number, description: String,
+  chauffeurDisponible: { type: Boolean, default: false },
   photos: [String], statut: { type: String, default: 'disponible' },
 }, { timestamps: true });
 
 const Vehicule = mongoose.models.Vehicule ?? mongoose.model('Vehicule', VehiculeSchema);
 
-const VEHICULES = [
+const IMG_DIR = path.resolve(
+  'C:/Users/hp/Desktop/Top service/Image/Image vehicules'
+);
+
+const VEHICULES_DATA = [
   {
-    marque: 'Toyota', modele: 'Land Cruiser', annee: 2021, couleur: 'Blanc',
-    prixParJour: 75000, kilometrage: 32000, carburant: 'diesel',
-    transmission: 'automatique', nombrePlaces: 7, statut: 'disponible',
-    description: 'SUV robuste idéal pour les routes africaines. Climatisation, GPS, toit ouvrant.',
-    photos: ['https://images.unsplash.com/photo-1594502184342-2e12f877aa73?w=1200&h=800&fit=crop'],
+    marque: 'Toyota', modele: 'Yaris', annee: 2018, couleur: 'Noir',
+    prixParJour: 20000, kilometrage: 65000, carburant: 'essence',
+    transmission: 'manuelle', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'Citadine compacte et économique, idéale pour les déplacements en ville.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.58.jpeg',
+    publicId: 'toyota-yaris',
   },
   {
-    marque: 'Toyota', modele: 'Corolla', annee: 2022, couleur: 'Argent',
-    prixParJour: 25000, kilometrage: 18000, carburant: 'essence',
-    transmission: 'manuelle', nombrePlaces: 5, statut: 'disponible',
-    description: 'Berline économique et fiable. Parfaite pour les déplacements en ville.',
-    photos: ['https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=1200&h=800&fit=crop'],
+    marque: 'Toyota', modele: 'RAV4 II', annee: 2004, couleur: 'Gris',
+    prixParJour: 30000, kilometrage: 120000, carburant: 'essence',
+    transmission: 'manuelle', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'SUV compact 2ème génération, robuste et fiable pour tous types de trajets.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.16 (2).jpeg',
+    publicId: 'toyota-rav4-2',
   },
   {
-    marque: 'Mercedes-Benz', modele: 'Classe E', annee: 2020, couleur: 'Noir',
-    prixParJour: 90000, kilometrage: 45000, carburant: 'diesel',
-    transmission: 'automatique', nombrePlaces: 5, statut: 'disponible',
-    description: 'Berline de luxe avec intérieur cuir, système audio premium et conduite assistée.',
-    photos: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=1200&h=800&fit=crop'],
+    marque: 'Suzuki', modele: 'Grand Vitara', annee: 2010, couleur: 'Gris',
+    prixParJour: 40000, kilometrage: 95000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'SUV compact tout-terrain avec intérieur cuir noir et boîte automatique.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.58 (1).jpeg',
+    publicId: 'suzuki-grand-vitara',
   },
   {
-    marque: 'Hyundai', modele: 'Tucson', annee: 2021, couleur: 'Gris',
-    prixParJour: 35000, kilometrage: 27000, carburant: 'essence',
-    transmission: 'automatique', nombrePlaces: 5, statut: 'disponible',
-    description: 'SUV compact moderne avec écran tactile, caméra de recul et régulateur de vitesse.',
-    photos: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&h=800&fit=crop'],
+    marque: 'Toyota', modele: 'RAV4', annee: 2013, couleur: 'Rouge',
+    prixParJour: 45000, kilometrage: 80000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'SUV RAV4 3ème génération en rouge, intérieur gris clair, coffre spacieux.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.13.jpeg',
+    publicId: 'toyota-rav4-rouge',
   },
   {
-    marque: 'Mitsubishi', modele: 'L200', annee: 2020, couleur: 'Blanc',
-    prixParJour: 45000, kilometrage: 55000, carburant: 'diesel',
-    transmission: 'manuelle', nombrePlaces: 5, statut: 'disponible',
-    description: 'Pick-up 4x4 puissant. Idéal pour transporter du matériel ou rouler hors piste.',
-    photos: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=1200&h=800&fit=crop'],
+    marque: 'Toyota', modele: 'RAV4', annee: 2019, couleur: 'Gris',
+    prixParJour: 50000, kilometrage: 42000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'SUV RAV4 5ème génération, écran tactile, sièges gris, coffre avec hayon électrique.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.12.jpeg',
+    publicId: 'toyota-rav4-gris',
   },
   {
-    marque: 'Honda', modele: 'CR-V', annee: 2022, couleur: 'Bleu',
-    prixParJour: 40000, kilometrage: 12000, carburant: 'essence',
-    transmission: 'automatique', nombrePlaces: 5, statut: 'disponible',
-    description: 'SUV familial spacieux avec grand coffre, Honda Sensing et connectivité Apple CarPlay.',
-    photos: ['https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=1200&h=800&fit=crop'],
+    marque: 'Toyota', modele: 'Hilux', annee: 2020, couleur: 'Gris',
+    prixParJour: 50000, kilometrage: 55000, carburant: 'diesel',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'Pick-up double cabine dernière génération, benne aluminium, écran multimédia.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.14 (1).jpeg',
+    publicId: 'toyota-hilux-silver',
   },
   {
-    marque: 'Nissan', modele: 'Patrol', annee: 2019, couleur: 'Sable',
-    prixParJour: 80000, kilometrage: 68000, carburant: 'diesel',
-    transmission: 'automatique', nombrePlaces: 8, statut: 'maintenance',
-    description: 'Grand SUV 8 places, traction intégrale permanente. Parfait pour les longs trajets.',
-    photos: ['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=1200&h=800&fit=crop'],
+    marque: 'Toyota', modele: 'Hilux 8G', annee: 2016, couleur: 'Blanc',
+    prixParJour: 60000, kilometrage: 75000, carburant: 'diesel',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'Toyota Hilux 8ème génération blanc, intérieur cuir noir, benne métallique.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.15.jpeg',
+    publicId: 'toyota-hilux-8g',
   },
   {
-    marque: 'Kia', modele: 'Sportage', annee: 2023, couleur: 'Rouge',
-    prixParJour: 32000, kilometrage: 5000, carburant: 'essence',
-    transmission: 'automatique', nombrePlaces: 5, statut: 'disponible',
-    description: 'Tout neuf ! SUV compact avec garantie constructeur, système multimédia dernière génération.',
-    photos: ['https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=1200&h=800&fit=crop'],
+    marque: 'Jetour', modele: 'Dashing', annee: 2023, couleur: 'Blanc',
+    prixParJour: 70000, kilometrage: 8000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'SUV Jetour Dashing neuf, design sport, écran large, sellerie sport.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.14 (4).jpeg',
+    publicId: 'jetour-dashing',
+  },
+  {
+    marque: 'Jetour', modele: 'X70 Plus', annee: 2022, couleur: 'Argent',
+    prixParJour: 75000, kilometrage: 15000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 7, ville: 'brazzaville',
+    description: 'Grand SUV 7 places, sellerie rouge premium, toit panoramique, écran tactile HD.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.12 (1).jpeg',
+    publicId: 'jetour-x70-plus',
+  },
+  {
+    marque: 'Toyota', modele: 'Fortuner', annee: 2018, couleur: 'Blanc',
+    prixParJour: 75000, kilometrage: 62000, carburant: 'diesel',
+    transmission: 'automatique', nombrePlaces: 7, ville: 'brazzaville',
+    description: 'SUV 7 places Toyota Fortuner, sellerie beige, coffre modulable, traction 4x4.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.14 (2).jpeg',
+    publicId: 'toyota-fortuner',
+  },
+  {
+    marque: 'Lexus', modele: 'GX 460', annee: 2015, couleur: 'Bleu nuit',
+    prixParJour: 85000, kilometrage: 78000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 7, ville: 'brazzaville',
+    description: 'SUV de luxe Lexus GX 460, intérieur cuir beige 7 places, 4x4 permanent.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.15 (2).jpeg',
+    publicId: 'lexus-gx460',
+  },
+  {
+    marque: 'Jetour', modele: 'T1', annee: 2024, couleur: 'Gris',
+    prixParJour: 90000, kilometrage: 5000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'Jetour T1 gris, SUV baroudeur design carré, sellerie turquoise, Apple CarPlay.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.13 (1).jpeg',
+    publicId: 'jetour-t1-gris',
+  },
+  {
+    marque: 'Jetour', modele: 'T1 Premium', annee: 2024, couleur: 'Noir',
+    prixParJour: 120000, kilometrage: 3000, carburant: 'essence',
+    transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
+    description: 'Jetour T1 version Premium noire, intérieur cuir vert luxe, sellerie prestige.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.14.jpeg',
+    publicId: 'jetour-t1-noir',
+  },
+  {
+    marque: 'Toyota', modele: 'Land Cruiser Prado', annee: 2024, couleur: 'Sable',
+    prixParJour: 150000, kilometrage: 2000, carburant: 'diesel',
+    transmission: 'automatique', nombrePlaces: 7, ville: 'brazzaville',
+    description: 'Toyota Land Cruiser Prado 2024, Mode Select 4x4, coffre XXL, le summum du confort.',
+    imageFile: 'WhatsApp Image 2026-04-22 at 07.58.17 (1).jpeg',
+    publicId: 'toyota-prado',
   },
 ];
+
+async function uploadImage(imageFile: string, publicId: string): Promise<string> {
+  const filePath = path.join(IMG_DIR, imageFile);
+  const buffer = fs.readFileSync(filePath);
+
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      {
+        folder: 'top-service/vehicules',
+        public_id: publicId,
+        resource_type: 'image',
+        overwrite: true,
+        transformation: [{ width: 1200, height: 800, crop: 'fill', quality: 'auto' }],
+      },
+      (err, result) => {
+        if (err || !result) return reject(err ?? new Error('Upload échoué'));
+        resolve(result.secure_url);
+      }
+    ).end(buffer);
+  });
+}
 
 async function seed() {
   await mongoose.connect(MONGODB_URI!);
@@ -81,15 +172,31 @@ async function seed() {
 
   const existants = await Vehicule.countDocuments();
   if (existants > 0) {
-    console.log(`⚠️  ${existants} véhicule(s) déjà en base. Suppression et recréation...`);
+    console.log(`🗑️  Suppression de ${existants} ancien(s) véhicule(s)...`);
     await Vehicule.deleteMany({});
+    console.log('✅ Anciens véhicules supprimés\n');
   }
 
-  await Vehicule.insertMany(VEHICULES);
-  console.log(`✅ ${VEHICULES.length} véhicules créés avec succès.`);
+  const vehiculesAvecPhotos = [];
+
+  for (const v of VEHICULES_DATA) {
+    const { imageFile, publicId, ...data } = v;
+    console.log(`📤 Upload image: ${v.modele}...`);
+    try {
+      const url = await uploadImage(imageFile, publicId);
+      console.log(`   ✅ ${url}`);
+      vehiculesAvecPhotos.push({ ...data, photos: [url] });
+    } catch (err) {
+      console.error(`   ❌ Erreur upload ${v.modele}:`, err);
+      vehiculesAvecPhotos.push({ ...data, photos: [] });
+    }
+  }
+
+  await Vehicule.insertMany(vehiculesAvecPhotos);
+  console.log(`\n✅ ${vehiculesAvecPhotos.length} véhicules insérés en base.`);
 
   await mongoose.disconnect();
-  console.log('\nTerminé.');
+  console.log('Terminé.');
 }
 
 seed().catch((err) => { console.error(err); process.exit(1); });

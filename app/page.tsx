@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import HeroSlider from './components/HeroSlider';
 
 export default function Accueil() {
   return (
@@ -16,70 +17,13 @@ export default function Accueil() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section style={{
-        minHeight: '88vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '60px 24px',
-      }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '8px',
-          background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)',
-          borderRadius: '50px', padding: '6px 18px', marginBottom: '28px',
-          fontSize: '0.8rem', fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.05em', textTransform: 'uppercase',
-        }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--orange)', display: 'inline-block', animation: 'pulse-ring 1.5s ease infinite' }} />
-          Location de véhicules au Congo
-        </div>
-
-        <h1 className="titre-hero" style={{ maxWidth: '720px', marginBottom: '20px' }}>
-          Le véhicule qu'il vous faut,<br />
-          <span style={{ color: 'var(--orange)' }}>quand vous en avez besoin</span>
-        </h1>
-
-        <p style={{
-          maxWidth: '520px', color: 'var(--gris)', fontSize: '1.05rem',
-          lineHeight: 1.7, marginBottom: '40px',
-        }}>
-          Réservez en quelques clics parmi notre flotte de véhicules disponibles.
-          Confirmation rapide, prix transparents, service de confiance.
-        </p>
-
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Link href="/vehicules" className="btn" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-            Voir les véhicules
-          </Link>
-          <Link href="/inscription" className="btn-ghost btn" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-            Créer un compte gratuit
-          </Link>
-        </div>
-
-        {/* Stats */}
-        <div style={{
-          display: 'flex', gap: '32px', marginTop: '64px',
-          flexWrap: 'wrap', justifyContent: 'center',
-        }}>
-          {[
-            { val: '100%', label: 'Gratuit à l\'inscription' },
-            { val: '< 24h', label: 'Confirmation garantie' },
-            { val: 'Flotte', label: 'Diversifiée & entretenue' },
-          ].map(({ val, label }) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--brun)', margin: 0 }}>{val}</p>
-              <p style={{ fontSize: '0.8rem', color: 'var(--gris)', margin: '4px 0 0', fontWeight: 500 }}>{label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Hero Slider */}
+      <HeroSlider />
 
       {/* Features */}
-      <section style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)', padding: '80px 24px' }}>
+      <section style={{ background: '#FFFFFF', padding: '80px 24px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
+          <p style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
             Pourquoi choisir Top Service
           </p>
           <h2 style={{ textAlign: 'center', fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 800, color: 'var(--brun)', marginBottom: '56px' }}>
@@ -91,8 +35,8 @@ export default function Accueil() {
               {
                 titre: 'Réservation en ligne',
                 texte: 'Choisissez votre véhicule, sélectionnez vos dates et envoyez votre demande en moins de 2 minutes.',
-                couleur: 'var(--orange)',
-                bg: 'rgba(249,115,22,0.06)',
+                couleur: '#2563EB',
+                bg: 'rgba(37,99,235,0.06)',
                 icone: '→',
               },
               {
@@ -105,15 +49,15 @@ export default function Accueil() {
               {
                 titre: 'Prix transparents',
                 texte: 'Tarif par jour affiché clairement, sans frais cachés. Payez uniquement ce que vous voyez.',
-                couleur: '#EAB308',
-                bg: 'rgba(234,179,8,0.06)',
+                couleur: '#1B3B8A',
+                bg: 'rgba(27,59,138,0.06)',
                 icone: 'F',
               },
               {
                 titre: 'Flotte entretenue',
                 texte: 'Tous nos véhicules sont régulièrement contrôlés et disponibles dans les meilleures conditions.',
-                couleur: 'var(--orange)',
-                bg: 'rgba(249,115,22,0.06)',
+                couleur: '#2563EB',
+                bg: 'rgba(37,99,235,0.06)',
                 icone: '◆',
               },
             ].map(({ titre, texte, couleur, bg, icone }) => (
@@ -134,8 +78,43 @@ export default function Accueil() {
         </div>
       </section>
 
+      {/* Services à l'heure */}
+      <section style={{ background: 'var(--creme)', padding: '80px 24px' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <p style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
+            Nos tarifs à l'heure
+          </p>
+          <h2 style={{ textAlign: 'center', fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 800, color: 'var(--brun)', marginBottom: '48px' }}>
+            Location courte durée
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            {[
+              { modele: 'Toyota RAV4', gen: '4ème Génération', prix: '5 000', zone: 'Zone Océan uniquement' },
+              { modele: 'Jetour', gen: 'Nouvelle génération', prix: '10 000', zone: 'Centre ville uniquement' },
+            ].map(({ modele, gen, prix, zone }) => (
+              <div key={modele} style={{
+                background: '#FFFFFF', borderRadius: '16px', padding: '32px',
+                border: '1px solid rgba(27,59,138,0.1)',
+                boxShadow: '0 4px 20px rgba(27,59,138,0.08)',
+              }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>{gen}</p>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--brun)', marginBottom: '16px' }}>{modele}</h3>
+                <div style={{
+                  display: 'inline-block', background: '#1B3B8A', color: 'white',
+                  borderRadius: '8px', padding: '8px 16px', marginBottom: '12px',
+                }}>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 900 }}>{prix}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 400 }}> FCFA / Heure</span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--gris)', margin: 0 }}>📍 {zone}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Comment ça marche */}
-      <section style={{ padding: '80px 24px' }}>
+      <section style={{ padding: '80px 24px', background: '#FFFFFF' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--vert)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
             Comment ça marche
@@ -154,11 +133,11 @@ export default function Accueil() {
                 <div key={num} style={{ textAlign: 'center', padding: '24px 16px', flex: '1', minWidth: '180px', maxWidth: '240px' }}>
                   <div style={{
                     width: '56px', height: '56px', borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--orange), var(--orange-dark))',
+                    background: 'linear-gradient(135deg, #2563EB, #1B3B8A)',
                     color: 'white', fontWeight: 900, fontSize: '1.3rem',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     margin: '0 auto 16px',
-                    boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
+                    boxShadow: '0 4px 16px rgba(37,99,235,0.35)',
                   }}>
                     {num}
                   </div>
@@ -166,7 +145,7 @@ export default function Accueil() {
                   <p style={{ margin: 0, color: 'var(--gris)', fontSize: '0.8rem', lineHeight: 1.6 }}>{texte}</p>
                 </div>
                 {i < 2 && (
-                  <div key={`arrow-${i}`} className="steps-arrow" style={{ color: 'var(--orange-light)', fontSize: '1.5rem', fontWeight: 700, flexShrink: 0 }}>
+                  <div key={`arrow-${i}`} className="steps-arrow" style={{ color: '#93C5FD', fontSize: '1.5rem', fontWeight: 700, flexShrink: 0 }}>
                     →
                   </div>
                 )}
@@ -177,23 +156,34 @@ export default function Accueil() {
       </section>
 
       {/* CTA final */}
-      <section style={{ padding: '80px 24px 100px' }}>
+      <section style={{ padding: '80px 24px 100px', background: 'var(--creme)' }}>
         <div style={{
           maxWidth: '680px', margin: '0 auto', textAlign: 'center',
-          background: 'linear-gradient(135deg, rgba(249,115,22,0.08) 0%, rgba(22,163,74,0.06) 100%)',
-          border: '1px solid rgba(249,115,22,0.15)', borderRadius: '24px', padding: '56px 32px',
+          background: 'linear-gradient(135deg, #1B3B8A 0%, #0D1B3E 100%)',
+          borderRadius: '24px', padding: '56px 32px',
+          boxShadow: '0 12px 48px rgba(27,59,138,0.3)',
         }}>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 800, color: 'var(--brun)', marginBottom: '16px' }}>
+          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 800, color: '#FFFFFF', marginBottom: '16px' }}>
             Prêt à réserver votre véhicule ?
           </h2>
-          <p style={{ color: 'var(--gris)', marginBottom: '32px', fontSize: '0.95rem', lineHeight: 1.7 }}>
+          <p style={{ color: '#CBD5E1', marginBottom: '32px', fontSize: '0.95rem', lineHeight: 1.7 }}>
             Rejoignez nos clients satisfaits. Inscription gratuite, sans engagement.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/vehicules" className="btn" style={{ padding: '14px 32px' }}>
+            <Link href="/vehicules" style={{
+              padding: '14px 32px', fontWeight: 700, borderRadius: '10px',
+              background: '#FFFFFF', color: '#1B3B8A', textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+            }}>
               Voir les véhicules
             </Link>
-            <Link href="/inscription" className="btn-ghost btn" style={{ padding: '14px 32px' }}>
+            <Link href="/inscription" style={{
+              padding: '14px 32px', fontWeight: 700, borderRadius: '10px',
+              border: '2px solid rgba(219,234,254,0.5)', color: '#DBEAFE',
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+              background: 'rgba(255,255,255,0.1)',
+            }}>
               S'inscrire gratuitement
             </Link>
           </div>
@@ -202,14 +192,15 @@ export default function Accueil() {
 
       {/* Footer */}
       <footer style={{
-        borderTop: '1px solid rgba(249,115,22,0.1)',
+        borderTop: '1px solid rgba(27,59,138,0.1)',
         padding: '24px 32px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexWrap: 'wrap', gap: '12px',
         fontSize: '0.8rem', color: 'var(--gris)',
+        background: '#FFFFFF',
       }}>
         <span className="navbar-brand" style={{ fontSize: '1.1rem' }}>Top Service</span>
-        <span>Location de véhicules · Congo</span>
+        <span>Location de véhicules · Congo · Aéroport Agostinho-Neto</span>
         <div style={{ display: 'flex', gap: '20px' }}>
           <Link href="/vehicules" style={{ color: 'var(--gris)', textDecoration: 'none' }}>Catalogue</Link>
           <Link href="/connexion" style={{ color: 'var(--gris)', textDecoration: 'none' }}>Connexion</Link>

@@ -24,7 +24,9 @@ export default function NavbarPublique() {
     router.refresh();
   }
 
-  const lienTableauBord = user?.role === 'gerant' ? '/gerant/tableau-de-bord' : '/client/tableau-de-bord';
+  const lienTableauBord = user?.role === 'gerant' ? '/gerant/tableau-de-bord'
+    : user?.role === 'chauffeur' ? '/chauffeur/tableau-de-bord'
+    : '/client/tableau-de-bord';
   const initiale = user?.nom?.[0]?.toUpperCase() ?? '';
 
   return (
@@ -60,7 +62,7 @@ export default function NavbarPublique() {
                 <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 10px)', zIndex: 200, background: 'white', borderRadius: '16px', width: '220px', boxShadow: '0 8px 40px rgba(28,25,23,0.15)', border: '1px solid rgba(249,115,22,0.12)', animation: 'slideUp 0.2s ease', overflow: 'hidden' }}>
                   <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(249,115,22,0.07), rgba(22,163,74,0.05))', borderBottom: '1px solid rgba(249,115,22,0.08)' }}>
                     <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{user.nom}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>{user.role === 'gerant' ? 'Gérant' : 'Client'}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>{user.role === 'gerant' ? 'Gérant' : user.role === 'chauffeur' ? 'Chauffeur' : 'Client'}</p>
                   </div>
                   <div style={{ padding: '8px' }}>
                     <Link href={lienTableauBord} onClick={() => setMenuOuvert(false)} style={{ display: 'block', padding: '10px 12px', borderRadius: '10px', color: 'var(--brun)', textDecoration: 'none', fontWeight: 500, fontSize: '0.875rem' }}>

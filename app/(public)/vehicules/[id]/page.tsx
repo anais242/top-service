@@ -223,7 +223,7 @@ export default function PageDetailPublic() {
             </>
           )}
 
-          {vehicule.chauffeurDisponible && (
+          {(
             <div className="form-group">
               <label>Chauffeur</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>

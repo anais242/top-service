@@ -43,7 +43,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['client', 'gerant', 'chauffeur'],
+      enum: ['client', 'gerant', 'chauffeur', 'business'],
       default: 'client',
     },
     // Permet de désactiver un compte sans le supprimer

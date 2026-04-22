@@ -24,8 +24,9 @@ export default function NavbarPublique() {
     router.refresh();
   }
 
-  const lienTableauBord = user?.role === 'gerant' ? '/gerant/tableau-de-bord'
+  const lienTableauBord = user?.role === 'gerant'   ? '/gerant/tableau-de-bord'
     : user?.role === 'chauffeur' ? '/chauffeur/tableau-de-bord'
+    : user?.role === 'business'  ? '/business/tableau-de-bord'
     : '/client/tableau-de-bord';
   const initiale = user?.nom?.[0]?.toUpperCase() ?? '';
 

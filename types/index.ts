@@ -1,5 +1,5 @@
 // ─── Rôles utilisateur ────────────────────────────────────────────────────────
-export type UserRole = 'client' | 'gerant' | 'chauffeur';
+export type UserRole = 'client' | 'gerant' | 'chauffeur' | 'business';
 
 // ─── Payload stocké dans les JWT ──────────────────────────────────────────────
 export interface JWTPayload {

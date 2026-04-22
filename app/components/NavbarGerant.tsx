@@ -9,6 +9,7 @@ const LIENS = [
   { href: '/gerant/vehicules',       label: 'Parc auto' },
   { href: '/gerant/reservations',    label: 'Reservations' },
   { href: '/gerant/chauffeurs',      label: 'Chauffeurs' },
+  { href: '/gerant/business',        label: 'Corporate' },
 ];
 
 export default function NavbarGerant({ nom }: { nom?: string }) {

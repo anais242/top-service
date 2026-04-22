@@ -33,6 +33,7 @@ export async function middleware(req: NextRequest) {
   const estClient    = utilisateur?.role === 'client';
   const estGerant    = utilisateur?.role === 'gerant';
   const estChauffeur = utilisateur?.role === 'chauffeur';
+  const estBusiness  = utilisateur?.role === 'business';
 
   // ── Redirection si déjà connecté et sur une route auth ──────────────────────
   const estRouteAuth = ['/connexion', '/inscription'].includes(pathname);
@@ -40,6 +41,7 @@ export async function middleware(req: NextRequest) {
     let destination = '/client/tableau-de-bord';
     if (estGerant)    destination = '/gerant/tableau-de-bord';
     if (estChauffeur) destination = '/chauffeur/tableau-de-bord';
+    if (estBusiness)  destination = '/business/tableau-de-bord';
     return NextResponse.redirect(new URL(destination, req.url));
   }
 
@@ -59,6 +61,12 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/chauffeur')) {
     if (!estConnecte)  return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
     if (!estChauffeur) return NextResponse.redirect(new URL('/connexion', req.url));
+  }
+
+  // ── Protection de l'espace business ─────────────────────────────────────────
+  if (pathname.startsWith('/business')) {
+    if (!estConnecte)  return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
+    if (!estBusiness)  return NextResponse.redirect(new URL('/connexion', req.url));
   }
 
   // ── Injection des infos utilisateur dans les headers (pour les Server Components) ──

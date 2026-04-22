@@ -9,6 +9,7 @@ import { COOKIE_ACCESS } from '@/lib/auth/cookies';
 import type { ApiResponse } from '@/types';
 import { envoyerEmailReservationClient, envoyerEmailReservationGerant } from '@/lib/emails/resend';
 import User from '@/models/User';
+import ContratVehicule from '@/models/ContratVehicule';
 import { CHAUFFEUR_JOUR, tarifChauffeur } from '@/lib/tarifs';
 
 // GET /api/reservations — liste selon le rôle
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get(COOKIE_ACCESS)?.value;
     const payload = token ? await verifierAccessToken(token) : null;
-    if (!payload || payload.role !== 'client')
+    if (!payload || !['client', 'business'].includes(payload.role))
       return NextResponse.json<ApiResponse>({ success: false, message: 'Connexion requise' }, { status: 401 });
 
     const body = await req.json().catch(() => null);
@@ -70,28 +71,43 @@ export async function POST(req: NextRequest) {
     if (!vehicule || vehicule.statut !== 'disponible')
       return NextResponse.json<ApiResponse>({ success: false, message: 'Véhicule indisponible' }, { status: 400 });
 
+    // Pour les clients corporate, récupérer le contrat négocié
+    let contrat = null;
+    if (payload.role === 'business') {
+      contrat = await ContratVehicule.findOne({ client: payload.userId, vehicule: vehiculeId, actif: true });
+      if (!contrat)
+        return NextResponse.json<ApiResponse>({ success: false, message: 'Ce véhicule ne fait pas partie de votre contrat' }, { status: 403 });
+    }
+
     // Calcul dateFin, durée et prix selon le type
     let dateFin: Date;
     let nombreJours = 0;
     let nombreHeures: number | null = null;
     let prixTotal: number;
 
+    // Tarifs : utilise le contrat corporate si disponible, sinon tarif standard
+    const prixJour  = contrat ? contrat.prixParJour  : vehicule.prixParJour;
+    const prixHeure = contrat ? contrat.prixParHeure : vehicule.prixParHeure;
+
     if (typeLocation === 'heure') {
-      if (!vehicule.prixParHeure)
+      if (!prixHeure)
         return NextResponse.json<ApiResponse>({ success: false, message: 'Ce véhicule ne propose pas de location à l\'heure' }, { status: 400 });
       nombreHeures = (validation.data as { nombreHeures: number }).nombreHeures;
       dateFin = new Date(dateDebut.getTime() + nombreHeures * 60 * 60 * 1000);
-      prixTotal = nombreHeures * vehicule.prixParHeure;
+      prixTotal = nombreHeures * prixHeure;
     } else {
       const dF = (validation.data as { dateFin: string }).dateFin;
       dateFin = new Date(dF);
       const ms = dateFin.getTime() - dateDebut.getTime();
       nombreJours = Math.ceil(ms / (1000 * 60 * 60 * 24));
-      prixTotal = nombreJours * vehicule.prixParJour;
+      prixTotal = nombreJours * prixJour;
     }
 
     // Tarif chauffeur en supplément (tarifs fixes : 7 500 F jour / 10 000 F nuit)
     if (avecChauffeur) {
+      // Pour un corporate, vérifier que le contrat autorise le chauffeur
+      if (contrat && !contrat.avecChauffeur)
+        return NextResponse.json<ApiResponse>({ success: false, message: 'Le chauffeur n\'est pas inclus dans votre contrat pour ce véhicule' }, { status: 400 });
       if (typeLocation === 'jour') {
         prixTotal += nombreJours * CHAUFFEUR_JOUR;
       } else if (typeLocation === 'heure') {

@@ -223,6 +223,30 @@ export default function PageDetailPublic() {
             </>
           )}
 
+          {vehicule.chauffeurDisponible && (
+            <div className="form-group">
+              <label>Chauffeur</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {([
+                  { val: false, label: 'Sans chauffeur' },
+                  { val: true,  label: 'Avec chauffeur' },
+                ] as { val: boolean; label: string }[]).map(({ val, label }) => (
+                  <button key={String(val)} onClick={() => setAvecChauffeur(val)}
+                    style={{
+                      padding: '10px', borderRadius: '8px', cursor: 'pointer',
+                      border: avecChauffeur === val ? '2px solid #1B3B8A' : '2px solid #E5E7EB',
+                      background: avecChauffeur === val ? 'rgba(27,59,138,0.07)' : '#FAFAFA',
+                      fontWeight: 600, fontSize: '0.875rem',
+                      color: avecChauffeur === val ? '#1B3B8A' : 'var(--gris)',
+                      transition: 'all 0.2s',
+                    }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {prixTotal > 0 && (
             <div style={{ background: 'rgba(249,115,22,0.06)', borderRadius: '10px', padding: '12px', marginBottom: '16px', border: '1px solid rgba(249,115,22,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -232,16 +256,6 @@ export default function PageDetailPublic() {
                     : `${jours} jour${jours > 1 ? 's' : ''} × ${vehicule.prixParJour.toLocaleString()} FCFA`}
                 </span>
               </div>
-              {avecChauffeur && prixBaseChauffeur > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: 'var(--vert)', fontSize: '0.875rem' }}>
-                    {typeLocation === 'heure'
-                      ? `Chauffeur · ${nombreHeures}h × ${prixChauffeurHeure.toLocaleString()} FCFA`
-                      : `Chauffeur · ${jours}j × ${vehicule.prixChauffeurParJour!.toLocaleString()} FCFA`}
-                  </span>
-                  <span style={{ color: 'var(--vert)', fontSize: '0.875rem', fontWeight: 600 }}>+{prixBaseChauffeur.toLocaleString()}</span>
-                </div>
-              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, borderTop: '1px solid rgba(249,115,22,0.1)', paddingTop: '8px', marginTop: '4px' }}>
                 <span>Total</span>
                 <span style={{ color: 'var(--orange)' }}>{prixTotal.toLocaleString()} FCFA</span>
@@ -249,34 +263,6 @@ export default function PageDetailPublic() {
             </div>
           )}
 
-          {vehicule.chauffeurDisponible && (
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--gris)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                Avec ou sans chauffeur ?
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {[
-                  { val: false, label: 'Sans chauffeur', sub: 'Vous conduisez' },
-                  { val: true,  label: 'Avec chauffeur', sub: typeLocation === 'heure'
-                      ? `+${Math.round((vehicule.prixChauffeurParJour ?? 0) / 8).toLocaleString()} FCFA/h`
-                      : `+${(vehicule.prixChauffeurParJour ?? 0).toLocaleString()} FCFA/j` },
-                ].map(({ val, label, sub }) => (
-                  <button key={String(val)} onClick={() => setAvecChauffeur(val)}
-                    style={{
-                      padding: '12px 10px', borderRadius: '10px', cursor: 'pointer',
-                      border: avecChauffeur === val ? '2px solid #1B3B8A' : '2px solid #E5E7EB',
-                      background: avecChauffeur === val ? 'rgba(27,59,138,0.06)' : '#FAFAFA',
-                      textAlign: 'center', transition: 'all 0.2s',
-                    }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: avecChauffeur === val ? '#1B3B8A' : 'var(--brun)' }}>
-                      {label}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--gris)', marginTop: '2px' }}>{sub}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="form-group">
             <label>Message (optionnel)</label>

@@ -34,7 +34,7 @@ const IMG_DIR = path.resolve(
 const VEHICULES_DATA = [
   {
     marque: 'Toyota', modele: 'Yaris', annee: 2018, couleur: 'Noir',
-    prixParJour: 20000, prixParHeure: 3000, kilometrage: 65000, carburant: 'essence',
+    prixParJour: 20000, prixParHeure: 10000, kilometrage: 65000, carburant: 'essence',
     transmission: 'manuelle', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 15000,
     description: 'Citadine compacte et économique, idéale pour les déplacements en ville.',
@@ -43,7 +43,7 @@ const VEHICULES_DATA = [
   },
   {
     marque: 'Toyota', modele: 'RAV4 II', annee: 2004, couleur: 'Gris',
-    prixParJour: 30000, prixParHeure: 5000, kilometrage: 120000, carburant: 'essence',
+    prixParJour: 30000, prixParHeure: 10000, kilometrage: 120000, carburant: 'essence',
     transmission: 'manuelle', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 20000,
     description: 'SUV compact 2ème génération, robuste et fiable pour tous types de trajets.',
@@ -52,7 +52,7 @@ const VEHICULES_DATA = [
   },
   {
     marque: 'Suzuki', modele: 'Grand Vitara', annee: 2010, couleur: 'Gris',
-    prixParJour: 40000, prixParHeure: 6000, kilometrage: 95000, carburant: 'essence',
+    prixParJour: 40000, prixParHeure: 10000, kilometrage: 95000, carburant: 'essence',
     transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 20000,
     description: 'SUV compact tout-terrain avec intérieur cuir noir et boîte automatique.',
@@ -61,7 +61,7 @@ const VEHICULES_DATA = [
   },
   {
     marque: 'Toyota', modele: 'RAV4', annee: 2013, couleur: 'Rouge',
-    prixParJour: 45000, prixParHeure: 7000, kilometrage: 80000, carburant: 'essence',
+    prixParJour: 45000, prixParHeure: 10000, kilometrage: 80000, carburant: 'essence',
     transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 25000,
     description: 'SUV RAV4 3ème génération en rouge, intérieur gris clair, coffre spacieux.',
@@ -70,7 +70,7 @@ const VEHICULES_DATA = [
   },
   {
     marque: 'Toyota', modele: 'RAV4', annee: 2019, couleur: 'Gris',
-    prixParJour: 50000, prixParHeure: 8000, kilometrage: 42000, carburant: 'essence',
+    prixParJour: 50000, prixParHeure: 10000, kilometrage: 42000, carburant: 'essence',
     transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 25000,
     description: 'SUV RAV4 5ème génération, écran tactile, sièges gris, coffre avec hayon électrique.',
@@ -79,7 +79,7 @@ const VEHICULES_DATA = [
   },
   {
     marque: 'Toyota', modele: 'Hilux', annee: 2020, couleur: 'Gris',
-    prixParJour: 50000, prixParHeure: 8000, kilometrage: 55000, carburant: 'diesel',
+    prixParJour: 50000, prixParHeure: 10000, kilometrage: 55000, carburant: 'diesel',
     transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 25000,
     description: 'Pick-up double cabine dernière génération, benne aluminium, écran multimédia.',
@@ -88,7 +88,7 @@ const VEHICULES_DATA = [
   },
   {
     marque: 'Toyota', modele: 'Hilux 8G', annee: 2016, couleur: 'Blanc',
-    prixParJour: 60000, prixParHeure: 9000, kilometrage: 75000, carburant: 'diesel',
+    prixParJour: 60000, prixParHeure: 10000, kilometrage: 75000, carburant: 'diesel',
     transmission: 'automatique', nombrePlaces: 5, ville: 'brazzaville',
     chauffeurDisponible: true, prixChauffeurParJour: 25000,
     description: 'Toyota Hilux 8ème génération blanc, intérieur cuir noir, benne métallique.',

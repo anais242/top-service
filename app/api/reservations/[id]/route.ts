@@ -85,7 +85,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         }).select('chauffeur').lean();
         const occupe = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
 
-        const chauffeurLibre = await User.findOne({ role: 'chauffeur', actif: true, _id: { $nin: [...occupe] } }).lean();
+        const chauffeurLibre = await User.findOne({ role: 'chauffeur', actif: true, _id: { $nin: Array.from(occupe) } }).lean();
         if (chauffeurLibre) {
           reservation.chauffeur = chauffeurLibre._id;
           reservation.statutChauffeur = 'en_attente';

@@ -31,6 +31,7 @@ export default function PageDetailPublic() {
   const [dateFin, setDateFin] = useState('');
   const [nombreHeures, setNombreHeures] = useState(1);
   const [avecChauffeur, setAvecChauffeur] = useState(false);
+  const [plageChauffeur, setPlageChauffeur] = useState<'jour' | 'nuit'>('jour');
   const [message, setMessage] = useState('');
   const [cguAcceptees, setCguAcceptees] = useState(false);
   const [erreurForm, setErreurForm] = useState('');
@@ -98,17 +99,16 @@ export default function PageDetailPublic() {
 
   const jours = calculerJours();
 
-  // Tarif chauffeur selon heure de début
-  const heureDebut = dateDebut ? new Date(dateDebut).getHours() : 8;
-  const tarifChauffeurApplicable = tarifChauffeur(heureDebut);
-  const labelTarifChauffeur = (heureDebut >= 21 || heureDebut < 6)
+  // Tarif chauffeur selon la plage choisie par le client
+  const tarifChauffeurApplicable = plageChauffeur === 'nuit' ? CHAUFFEUR_NUIT : CHAUFFEUR_JOUR;
+  const labelTarifChauffeur = plageChauffeur === 'nuit'
     ? `Nuit (21h–6h) : ${CHAUFFEUR_NUIT.toLocaleString()} FCFA`
     : `Jour (7h–21h) : ${CHAUFFEUR_JOUR.toLocaleString()} FCFA`;
 
   const prixBaseChauffeur = avecChauffeur
-    ? typeLocation === 'heure'
-      ? tarifChauffeurApplicable          // tarif fixe pour la plage (jour ou nuit)
-      : jours * CHAUFFEUR_JOUR            // location à la journée → tarif jour par défaut
+    ? jours > 0
+      ? jours * tarifChauffeurApplicable
+      : tarifChauffeurApplicable
     : 0;
   const prixTotal = typeLocation === 'heure'
     ? nombreHeures * (vehicule.prixParHeure ?? 0) + prixBaseChauffeur
@@ -235,7 +235,7 @@ export default function PageDetailPublic() {
           {/* Chauffeur */}
           <div className="form-group" style={{ minWidth: '200px' }}>
             <label>Chauffeur</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
               {([
                 { val: false, label: 'Sans' },
                 { val: true,  label: 'Avec' },
@@ -253,11 +253,31 @@ export default function PageDetailPublic() {
                 </button>
               ))}
             </div>
-            {/* Info tarifs */}
-            <p style={{ fontSize: '0.72rem', color: 'var(--gris)', margin: 0, lineHeight: 1.5 }}>
-              Jour (7h–21h) : <strong>{CHAUFFEUR_JOUR.toLocaleString()} FCFA</strong><br/>
-              Nuit (21h–6h) : <strong>{CHAUFFEUR_NUIT.toLocaleString()} FCFA</strong>
-            </p>
+            {/* Sélecteur plage horaire — visible uniquement avec chauffeur */}
+            {avecChauffeur && (
+              <div>
+                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--brun)', margin: '0 0 6px' }}>Plage horaire</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  {([
+                    { val: 'jour' as const, label: 'Jour', sous: `7h–21h · ${CHAUFFEUR_JOUR.toLocaleString()} FCFA` },
+                    { val: 'nuit' as const, label: 'Nuit', sous: `21h–6h · ${CHAUFFEUR_NUIT.toLocaleString()} FCFA` },
+                  ]).map(({ val, label, sous }) => (
+                    <button key={val} onClick={() => setPlageChauffeur(val)}
+                      style={{
+                        padding: '8px 6px', borderRadius: '8px', cursor: 'pointer',
+                        border: plageChauffeur === val ? '2px solid #1B3B8A' : '2px solid #E5E7EB',
+                        background: plageChauffeur === val ? 'rgba(27,59,138,0.07)' : '#FAFAFA',
+                        fontWeight: 600, fontSize: '0.8rem', textAlign: 'center',
+                        color: plageChauffeur === val ? '#1B3B8A' : 'var(--gris)',
+                        transition: 'all 0.2s',
+                      }}>
+                      <div>{label}</div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 400, marginTop: '2px' }}>{sous}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

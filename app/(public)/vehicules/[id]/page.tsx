@@ -7,7 +7,9 @@ import NavbarPublique from '@/app/components/NavbarPublique';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number; couleur: string; ville: string;
-  prixParJour: number; prixParHeure?: number; kilometrage: number; carburant: string; transmission: string;
+  prixParJour: number; prixParHeure?: number;
+  chauffeurDisponible?: boolean; prixChauffeurParJour?: number;
+  kilometrage: number; carburant: string; transmission: string;
   nombrePlaces: number; description: string; photos: string[];
 }
 
@@ -27,6 +29,7 @@ export default function PageDetailPublic() {
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [nombreHeures, setNombreHeures] = useState(1);
+  const [avecChauffeur, setAvecChauffeur] = useState(false);
   const [message, setMessage] = useState('');
   const [erreurForm, setErreurForm] = useState('');
   const [soumission, setSoumission] = useState(false);
@@ -63,8 +66,8 @@ export default function PageDetailPublic() {
     setSoumission(true);
     try {
       const body = typeLocation === 'heure'
-        ? { vehiculeId: id, typeLocation: 'heure', dateDebut, nombreHeures, messageClient: message }
-        : { vehiculeId: id, typeLocation: 'jour', dateDebut, dateFin, messageClient: message };
+        ? { vehiculeId: id, typeLocation: 'heure', dateDebut, nombreHeures, avecChauffeur, messageClient: message }
+        : { vehiculeId: id, typeLocation: 'jour', dateDebut, dateFin, avecChauffeur, messageClient: message };
 
       const res = await fetch('/api/reservations', {
         method: 'POST',
@@ -92,9 +95,15 @@ export default function PageDetailPublic() {
   if (!vehicule) return <div className="container"><div className="erreur">Véhicule introuvable</div></div>;
 
   const jours = calculerJours();
+  const prixChauffeurHeure = Math.round((vehicule.prixChauffeurParJour ?? 0) / 8);
+  const prixBaseChauffeur = avecChauffeur && vehicule.chauffeurDisponible && vehicule.prixChauffeurParJour
+    ? typeLocation === 'heure'
+      ? nombreHeures * prixChauffeurHeure
+      : jours * vehicule.prixChauffeurParJour
+    : 0;
   const prixTotal = typeLocation === 'heure'
-    ? nombreHeures * (vehicule.prixParHeure ?? 0)
-    : jours * vehicule.prixParJour;
+    ? nombreHeures * (vehicule.prixParHeure ?? 0) + prixBaseChauffeur
+    : jours * vehicule.prixParJour + prixBaseChauffeur;
 
   const infos = [
     { label: 'Ville', val: vehicule.ville === 'pointe-noire' ? 'Pointe-Noire' : 'Brazzaville' },
@@ -223,9 +232,48 @@ export default function PageDetailPublic() {
                     : `${jours} jour${jours > 1 ? 's' : ''} × ${vehicule.prixParJour.toLocaleString()} FCFA`}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+              {avecChauffeur && prixBaseChauffeur > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ color: 'var(--vert)', fontSize: '0.875rem' }}>
+                    {typeLocation === 'heure'
+                      ? `Chauffeur · ${nombreHeures}h × ${prixChauffeurHeure.toLocaleString()} FCFA`
+                      : `Chauffeur · ${jours}j × ${vehicule.prixChauffeurParJour!.toLocaleString()} FCFA`}
+                  </span>
+                  <span style={{ color: 'var(--vert)', fontSize: '0.875rem', fontWeight: 600 }}>+{prixBaseChauffeur.toLocaleString()}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, borderTop: '1px solid rgba(249,115,22,0.1)', paddingTop: '8px', marginTop: '4px' }}>
                 <span>Total</span>
                 <span style={{ color: 'var(--orange)' }}>{prixTotal.toLocaleString()} FCFA</span>
+              </div>
+            </div>
+          )}
+
+          {vehicule.chauffeurDisponible && (
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--gris)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                Avec ou sans chauffeur ?
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {[
+                  { val: false, label: 'Sans chauffeur', sub: 'Vous conduisez' },
+                  { val: true,  label: 'Avec chauffeur', sub: typeLocation === 'heure'
+                      ? `+${Math.round((vehicule.prixChauffeurParJour ?? 0) / 8).toLocaleString()} FCFA/h`
+                      : `+${(vehicule.prixChauffeurParJour ?? 0).toLocaleString()} FCFA/j` },
+                ].map(({ val, label, sub }) => (
+                  <button key={String(val)} onClick={() => setAvecChauffeur(val)}
+                    style={{
+                      padding: '12px 10px', borderRadius: '10px', cursor: 'pointer',
+                      border: avecChauffeur === val ? '2px solid #1B3B8A' : '2px solid #E5E7EB',
+                      background: avecChauffeur === val ? 'rgba(27,59,138,0.06)' : '#FAFAFA',
+                      textAlign: 'center', transition: 'all 0.2s',
+                    }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: avecChauffeur === val ? '#1B3B8A' : 'var(--brun)' }}>
+                      {label}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--gris)', marginTop: '2px' }}>{sub}</div>
+                  </button>
+                ))}
               </div>
             </div>
           )}

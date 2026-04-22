@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const reservations = await Reservation.find(filtre)
       .populate('vehicule', 'marque modele annee photos prixParJour')
       .populate('client', 'nom email telephone')
+      .populate('chauffeur', 'nom email')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
         { status: 422 }
       );
 
-    const { vehiculeId, typeLocation, messageClient } = validation.data;
+    const { vehiculeId, typeLocation, messageClient, avecChauffeur } = validation.data;
     const dateDebut = new Date(validation.data.dateDebut);
 
     // Vérification que la date de début est dans le futur
@@ -88,6 +89,18 @@ export async function POST(req: NextRequest) {
       prixTotal = nombreJours * vehicule.prixParJour;
     }
 
+    // Tarif chauffeur en supplément
+    if (avecChauffeur) {
+      if (!vehicule.chauffeurDisponible)
+        return NextResponse.json<ApiResponse>({ success: false, message: 'Ce véhicule ne propose pas de chauffeur' }, { status: 400 });
+      if (vehicule.prixChauffeurParJour) {
+        if (typeLocation === 'jour')
+          prixTotal += nombreJours * vehicule.prixChauffeurParJour;
+        else if (typeLocation === 'heure' && nombreHeures)
+          prixTotal += nombreHeures * Math.round(vehicule.prixChauffeurParJour / 8);
+      }
+    }
+
     // Vérification conflit de dates
     const conflit = await Reservation.findOne({
       vehicule: vehiculeId,
@@ -106,6 +119,7 @@ export async function POST(req: NextRequest) {
       nombreJours,
       nombreHeures,
       prixTotal,
+      avecChauffeur: avecChauffeur ?? false,
       messageClient,
     });
 

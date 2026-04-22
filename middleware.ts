@@ -29,37 +29,36 @@ export async function middleware(req: NextRequest) {
   // Vérification et décodage du token
   const utilisateur = accessToken ? await verifierAccessToken(accessToken) : null;
 
-  const estConnecte = utilisateur !== null;
-  const estClient   = utilisateur?.role === 'client';
-  const estGerant   = utilisateur?.role === 'gerant';
+  const estConnecte  = utilisateur !== null;
+  const estClient    = utilisateur?.role === 'client';
+  const estGerant    = utilisateur?.role === 'gerant';
+  const estChauffeur = utilisateur?.role === 'chauffeur';
 
   // ── Redirection si déjà connecté et sur une route auth ──────────────────────
   const estRouteAuth = ['/connexion', '/inscription'].includes(pathname);
   if (estConnecte && estRouteAuth) {
-    const destination = estGerant ? '/gerant/tableau-de-bord' : '/client/tableau-de-bord';
+    let destination = '/client/tableau-de-bord';
+    if (estGerant)    destination = '/gerant/tableau-de-bord';
+    if (estChauffeur) destination = '/chauffeur/tableau-de-bord';
     return NextResponse.redirect(new URL(destination, req.url));
   }
 
   // ── Protection de l'espace gérant ───────────────────────────────────────────
   if (pathname.startsWith('/gerant')) {
-    if (!estConnecte) {
-      return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
-    }
-    if (!estGerant) {
-      // Un client qui essaie d'accéder à l'espace gérant → redirection
-      return NextResponse.redirect(new URL('/client/tableau-de-bord', req.url));
-    }
+    if (!estConnecte) return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
+    if (!estGerant)   return NextResponse.redirect(new URL('/connexion', req.url));
   }
 
   // ── Protection de l'espace client ───────────────────────────────────────────
   if (pathname.startsWith('/client')) {
-    if (!estConnecte) {
-      return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
-    }
-    if (!estClient) {
-      // Un gérant qui essaie d'accéder à l'espace client → redirection
-      return NextResponse.redirect(new URL('/gerant/tableau-de-bord', req.url));
-    }
+    if (!estConnecte) return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
+    if (!estClient)   return NextResponse.redirect(new URL('/connexion', req.url));
+  }
+
+  // ── Protection de l'espace chauffeur ────────────────────────────────────────
+  if (pathname.startsWith('/chauffeur')) {
+    if (!estConnecte)  return NextResponse.redirect(new URL('/connexion?retour=' + pathname, req.url));
+    if (!estChauffeur) return NextResponse.redirect(new URL('/connexion', req.url));
   }
 
   // ── Injection des infos utilisateur dans les headers (pour les Server Components) ──
@@ -68,6 +67,7 @@ export async function middleware(req: NextRequest) {
     requestHeaders.set('x-user-id',    utilisateur.userId);
     requestHeaders.set('x-user-role',  utilisateur.role);
     requestHeaders.set('x-user-email', utilisateur.email);
+    requestHeaders.set('x-user-nom',   utilisateur.nom);
 
     return NextResponse.next({ request: { headers: requestHeaders } });
   }

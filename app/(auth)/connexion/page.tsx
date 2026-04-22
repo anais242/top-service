@@ -25,7 +25,11 @@ function FormulaireConnexion() {
       const json = await res.json();
       if (!res.ok) { setErreur(json.message || 'Erreur de connexion'); return; }
       const role = json.data?.role;
-      const dest = retour ? retour : role === 'gerant' ? '/gerant/tableau-de-bord' : '/client/tableau-de-bord';
+      let dest = retour ?? '/client/tableau-de-bord';
+      if (!retour) {
+        if (role === 'gerant')    dest = '/gerant/tableau-de-bord';
+        if (role === 'chauffeur') dest = '/chauffeur/tableau-de-bord';
+      }
       router.push(dest);
       router.refresh();
     } catch {

@@ -1,8 +1,8 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export type StatutReservation = 'en_attente' | 'confirmee' | 'refusee' | 'annulee' | 'terminee';
-
 export type TypeLocation = 'jour' | 'heure';
+export type StatutChauffeur = 'non_attribue' | 'en_attente' | 'acceptee' | 'refusee';
 
 export interface IReservation extends Document {
   vehicule: mongoose.Types.ObjectId;
@@ -13,6 +13,9 @@ export interface IReservation extends Document {
   nombreJours: number;
   nombreHeures?: number;
   prixTotal: number;
+  avecChauffeur: boolean;
+  chauffeur?: mongoose.Types.ObjectId;
+  statutChauffeur: StatutChauffeur;
   statut: StatutReservation;
   messageClient: string;
   messageGerant: string;
@@ -31,6 +34,9 @@ const reservationSchema = new Schema<IReservation>(
     nombreHeures:  { type: Number, min: 1, default: null },
     prixTotal:     { type: Number, required: true, min: 0 },
     statut:        { type: String, enum: ['en_attente', 'confirmee', 'refusee', 'annulee', 'terminee'], default: 'en_attente' },
+    avecChauffeur:   { type: Boolean, default: false },
+    chauffeur:       { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    statutChauffeur: { type: String, enum: ['non_attribue', 'en_attente', 'acceptee', 'refusee'], default: 'non_attribue' },
     messageClient: { type: String, maxlength: 500, default: '' },
     messageGerant: { type: String, maxlength: 500, default: '' },
   },

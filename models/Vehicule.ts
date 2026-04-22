@@ -13,12 +13,14 @@ export interface IVehicule extends Document {
   ville: Ville;
   prixParJour: number;
   prixParHeure?: number;
+  chauffeurDisponible: boolean;
+  prixChauffeurParJour?: number;
   kilometrage: number;
   carburant: Carburant;
   transmission: Transmission;
   nombrePlaces: number;
   description: string;
-  photos: string[];          // URLs Cloudinary
+  photos: string[];
   statut: StatutVehicule;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +40,8 @@ const vehiculeSchema = new Schema<IVehicule>(
     transmission:  { type: String, enum: ['manuelle', 'automatique'], required: true },
     nombrePlaces:  { type: Number, required: true, min: 1, max: 20 },
     description:   { type: String, trim: true, maxlength: 1000, default: '' },
+    chauffeurDisponible:   { type: Boolean, default: false },
+    prixChauffeurParJour:  { type: Number, min: 0, default: null },
     photos:        { type: [String], default: [] },
     statut:        { type: String, enum: ['disponible', 'loue', 'maintenance'], default: 'disponible' },
   },

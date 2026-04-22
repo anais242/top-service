@@ -49,8 +49,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const reservation = await Reservation.findById(params.id);
     if (!reservation) return NextResponse.json<ApiResponse>({ success: false, message: 'Réservation introuvable' }, { status: 404 });
 
-    // Gérant peut confirmer, refuser, terminer
+    // Gérant peut confirmer, refuser, terminer, assigner un chauffeur
     if (payload.role === 'gerant') {
+      // Assignation d'un chauffeur (sans changer le statut principal)
+      if (body.chauffeurId !== undefined) {
+        reservation.chauffeur = body.chauffeurId || null;
+        reservation.statutChauffeur = body.chauffeurId ? 'en_attente' : 'non_attribue';
+        await reservation.save();
+        return NextResponse.json<ApiResponse>({ success: true, data: reservation });
+      }
       const statutsAutorisesGerant = ['confirmee', 'refusee', 'terminee'];
       if (!statutsAutorisesGerant.includes(body.statut))
         return NextResponse.json<ApiResponse>({ success: false, message: 'Statut invalide' }, { status: 400 });

@@ -25,7 +25,9 @@ export default function PageNouveauVehicule() {
       couleur:      form.get('couleur') as string,
       ville:        form.get('ville') as string,
       prixParJour:  parseFloat(form.get('prixParJour') as string),
-      prixParHeure: form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
+      prixParHeure:          form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
+      chauffeurDisponible:   form.get('chauffeurDisponible') === 'on',
+      prixChauffeurParJour:  form.get('prixChauffeurParJour') ? parseFloat(form.get('prixChauffeurParJour') as string) : null,
       kilometrage:  parseInt(form.get('kilometrage') as string),
       carburant:    form.get('carburant') as string,
       transmission: form.get('transmission') as string,
@@ -153,6 +155,17 @@ export default function PageNouveauVehicule() {
             <div className="form-group">
               <label>Prix / heure (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>
               <input name="prixParHeure" type="number" min="0" placeholder="10000" />
+            </div>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label>Option chauffeur</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 400 }}>
+                <input name="chauffeurDisponible" type="checkbox" />
+                Chauffeur disponible pour ce véhicule
+              </label>
+            </div>
+            <div className="form-group">
+              <label>Prix chauffeur / jour (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>
+              <input name="prixChauffeurParJour" type="number" min="0" placeholder="15000" />
             </div>
             <div className="form-group">
               <label>Kilométrage</label>

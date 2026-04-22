@@ -3,12 +3,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+interface Chauffeur { _id: string; nom: string; }
+
 interface Reservation {
   _id: string;
   vehicule: { marque: string; modele: string; annee: number; photos: string[] };
   client: { nom: string; email: string; telephone: string };
   dateDebut: string; dateFin: string; nombreJours: number;
   prixTotal: number; statut: string; messageClient: string; createdAt: string;
+  avecChauffeur?: boolean;
+  chauffeur?: { _id: string; nom: string } | null;
+  statutChauffeur?: string;
 }
 
 const STATUT: Record<string, { label: string; bg: string; color: string }> = {
@@ -21,15 +26,20 @@ const STATUT: Record<string, { label: string; bg: string; color: string }> = {
 
 export default function PageReservationsGerant() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [chauffeurs, setChauffeurs] = useState<Chauffeur[]>([]);
   const [chargement, setChargement] = useState(true);
   const [filtre, setFiltre] = useState('tous');
   const [messageGerant, setMessageGerant] = useState<Record<string, string>>({});
+  const [chauffeurSelectionne, setChauffeurSelectionne] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch('/api/reservations')
-      .then((r) => r.json())
-      .then((j) => { if (j.success) setReservations(j.data); })
-      .finally(() => setChargement(false));
+    Promise.all([
+      fetch('/api/reservations').then((r) => r.json()),
+      fetch('/api/gerant/chauffeurs').then((r) => r.json()),
+    ]).then(([rj, cj]) => {
+      if (rj.success) setReservations(rj.data);
+      if (cj.success) setChauffeurs(cj.data);
+    }).finally(() => setChargement(false));
   }, []);
 
   async function changerStatut(id: string, statut: string) {
@@ -40,6 +50,24 @@ export default function PageReservationsGerant() {
     const json = await res.json();
     if (json.success) setReservations((r) => r.map((x) => x._id === id ? { ...x, statut } : x));
     else alert(json.message);
+  }
+
+  async function assignerChauffeur(id: string) {
+    const chauffeurId = chauffeurSelectionne[id] || null;
+    const res = await fetch(`/api/reservations/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chauffeurId }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      const chauffeur = chauffeurId ? chauffeurs.find((c) => c._id === chauffeurId) : null;
+      setReservations((prev) => prev.map((x) => x._id === id
+        ? { ...x, chauffeur: chauffeur ? { _id: chauffeur._id, nom: chauffeur.nom } : null, statutChauffeur: chauffeurId ? 'en_attente' : 'non_attribue' }
+        : x
+      ));
+    } else {
+      alert(json.message);
+    }
   }
 
   const reservationsFiltrees = filtre === 'tous'
@@ -104,6 +132,21 @@ export default function PageReservationsGerant() {
                       Message client : {r.messageClient}
                     </p>
                   )}
+                  {r.avecChauffeur && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ background: 'rgba(22,163,74,0.1)', color: 'var(--vert)', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
+                        Avec chauffeur
+                      </span>
+                      {r.chauffeur && (
+                        <span style={{ fontSize: '0.8rem', color: '#374151' }}>
+                          Assigné : <strong>{r.chauffeur.nom}</strong>
+                          {r.statutChauffeur === 'acceptee' && <span style={{ color: 'var(--vert)', marginLeft: '4px' }}>✓ Accepté</span>}
+                          {r.statutChauffeur === 'refusee' && <span style={{ color: '#dc2626', marginLeft: '4px' }}>✗ Refusé</span>}
+                          {r.statutChauffeur === 'en_attente' && <span style={{ color: '#713f12', marginLeft: '4px' }}>En attente</span>}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -129,10 +172,32 @@ export default function PageReservationsGerant() {
               )}
 
               {r.statut === 'confirmee' && (
-                <div style={{ marginTop: '12px', textAlign: 'right' }}>
-                  <button onClick={() => changerStatut(r._id, 'terminee')} style={{ padding: '8px 20px', background: '#e0e7ff', color: '#3730a3', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
-                    Marquer comme terminée
-                  </button>
+                <div style={{ marginTop: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '12px' }}>
+                  {r.avecChauffeur && chauffeurs.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={chauffeurSelectionne[r._id] || ''}
+                        onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
+                        style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                      >
+                        <option value="">— Sélectionner un chauffeur —</option>
+                        {chauffeurs.map((c) => (
+                          <option key={c._id} value={c._id}>{c.nom}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => assignerChauffeur(r._id)}
+                        style={{ padding: '8px 16px', background: 'rgba(22,163,74,0.1)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+                      >
+                        Assigner
+                      </button>
+                    </div>
+                  )}
+                  <div style={{ textAlign: 'right' }}>
+                    <button onClick={() => changerStatut(r._id, 'terminee')} style={{ padding: '8px 20px', background: '#e0e7ff', color: '#3730a3', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                      Marquer comme terminée
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

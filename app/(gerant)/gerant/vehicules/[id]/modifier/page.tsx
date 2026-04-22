@@ -6,7 +6,9 @@ import Link from 'next/link';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number; couleur: string; ville: string;
-  prixParJour: number; prixParHeure?: number; kilometrage: number; carburant: string; transmission: string;
+  prixParJour: number; prixParHeure?: number;
+  chauffeurDisponible?: boolean; prixChauffeurParJour?: number;
+  kilometrage: number; carburant: string; transmission: string;
   nombrePlaces: number; description: string; statut: string; photos: string[];
 }
 
@@ -39,6 +41,8 @@ export default function PageModifierVehicule() {
       ville: form.get('ville'),
       prixParJour: parseFloat(form.get('prixParJour') as string),
       prixParHeure: form.get('prixParHeure') ? parseFloat(form.get('prixParHeure') as string) : null,
+      chauffeurDisponible: form.get('chauffeurDisponible') === 'on',
+      prixChauffeurParJour: form.get('prixChauffeurParJour') ? parseFloat(form.get('prixChauffeurParJour') as string) : null,
       kilometrage: parseInt(form.get('kilometrage') as string),
       carburant: form.get('carburant'), transmission: form.get('transmission'),
       nombrePlaces: parseInt(form.get('nombrePlaces') as string),
@@ -122,6 +126,17 @@ export default function PageModifierVehicule() {
             <div className="form-group">
               <label>Prix / heure (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>
               <input name="prixParHeure" type="number" min="0" placeholder="10000" defaultValue={vehicule.prixParHeure ?? ''} />
+            </div>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label>Option chauffeur</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 400 }}>
+                <input name="chauffeurDisponible" type="checkbox" defaultChecked={vehicule.chauffeurDisponible ?? false} />
+                Chauffeur disponible pour ce véhicule
+              </label>
+            </div>
+            <div className="form-group">
+              <label>Prix chauffeur / jour (FCFA) <span style={{ fontWeight: 400, color: 'var(--gris)' }}>— optionnel</span></label>
+              <input name="prixChauffeurParJour" type="number" min="0" placeholder="15000" defaultValue={vehicule.prixChauffeurParJour ?? ''} />
             </div>
             <div className="form-group"><label>Kilométrage</label><input name="kilometrage" type="number" required defaultValue={vehicule.kilometrage} /></div>
             <div className="form-group">

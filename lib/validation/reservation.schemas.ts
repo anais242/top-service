@@ -7,6 +7,7 @@ export const schemaReservation = z.object({
   dateFin:       z.string().refine((d) => !isNaN(Date.parse(d)), 'Date invalide').optional(),
   nombreHeures:  z.number().min(1).max(24).optional(),
   messageClient: z.string().max(500).optional().default(''),
+  avecChauffeur: z.boolean().default(false),
 }).refine((d) => {
   if (d.typeLocation === 'jour') return !!d.dateFin && new Date(d.dateFin) > new Date(d.dateDebut);
   if (d.typeLocation === 'heure') return !!d.nombreHeures && d.nombreHeures >= 1;

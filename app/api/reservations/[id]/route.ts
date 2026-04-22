@@ -104,7 +104,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     await reservation.save();
-    const updated = await reservation.populate('vehicule', 'marque modele annee photos');
+    const updated = await reservation.populate([
+      { path: 'vehicule', select: 'marque modele annee photos' },
+      { path: 'chauffeur', select: 'nom' },
+    ]);
 
     // Email au client si confirmée ou refusée
     if (payload.role === 'gerant' && ['confirmee', 'refusee'].includes(body.statut)) {

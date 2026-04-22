@@ -54,10 +54,13 @@ export default function PageReservationsGerant() {
     });
     const json = await res.json();
     if (json.success) {
-      // Si confirmation avec auto-assignation chauffeur, mettre à jour l'état
       const updated = json.data;
+      // updated.chauffeur est maintenant { _id, nom } grâce au populate
+      const chauffeurData = updated.chauffeur && typeof updated.chauffeur === 'object' && 'nom' in updated.chauffeur
+        ? updated.chauffeur as { _id: string; nom: string }
+        : undefined;
       setReservations((r) => r.map((x) => x._id === id
-        ? { ...x, statut, chauffeur: updated.chauffeur ?? x.chauffeur, statutChauffeur: updated.statutChauffeur ?? x.statutChauffeur }
+        ? { ...x, statut, chauffeur: chauffeurData ?? x.chauffeur, statutChauffeur: updated.statutChauffeur ?? x.statutChauffeur }
         : x
       ));
       // Rafraîchir la liste des chauffeurs pour mettre à jour estOccupe

@@ -450,6 +450,15 @@ body {
   flex-shrink: 0;
 }
 
+/* ─── FORMULAIRE RÉSERVATION (ligne dates + chauffeur) ─── */
+.resa-form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   .container     { padding: 20px 16px; }

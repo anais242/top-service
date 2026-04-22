@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface Chauffeur { _id: string; nom: string; }
+interface VehiculeOption { _id: string; marque: string; modele: string; annee: number; }
 
 interface Reservation {
   _id: string;
-  vehicule: { marque: string; modele: string; annee: number; photos: string[] };
+  vehicule: { _id?: string; marque: string; modele: string; annee: number; photos: string[] };
   client: { nom: string; email: string; telephone: string };
   dateDebut: string; dateFin: string; nombreJours: number;
   prixTotal: number; statut: string; messageClient: string; createdAt: string;
@@ -27,18 +28,22 @@ const STATUT: Record<string, { label: string; bg: string; color: string }> = {
 export default function PageReservationsGerant() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [chauffeurs, setChauffeurs] = useState<Chauffeur[]>([]);
+  const [vehicules, setVehicules] = useState<VehiculeOption[]>([]);
   const [chargement, setChargement] = useState(true);
   const [filtre, setFiltre] = useState('tous');
   const [messageGerant, setMessageGerant] = useState<Record<string, string>>({});
   const [chauffeurSelectionne, setChauffeurSelectionne] = useState<Record<string, string>>({});
+  const [vehiculeSelectionne, setVehiculeSelectionne] = useState<Record<string, string>>({});
 
   useEffect(() => {
     Promise.all([
       fetch('/api/reservations').then((r) => r.json()),
       fetch('/api/gerant/chauffeurs').then((r) => r.json()),
-    ]).then(([rj, cj]) => {
+      fetch('/api/vehicules').then((r) => r.json()),
+    ]).then(([rj, cj, vj]) => {
       if (rj.success) setReservations(rj.data);
       if (cj.success) setChauffeurs(cj.data);
+      if (vj.success) setVehicules(vj.data);
     }).finally(() => setChargement(false));
   }, []);
 
@@ -65,6 +70,27 @@ export default function PageReservationsGerant() {
         ? { ...x, chauffeur: chauffeur ? { _id: chauffeur._id, nom: chauffeur.nom } : null, statutChauffeur: chauffeurId ? 'en_attente' : 'non_attribue' }
         : x
       ));
+    } else {
+      alert(json.message);
+    }
+  }
+
+  async function assignerVehicule(id: string) {
+    const vehiculeId = vehiculeSelectionne[id];
+    if (!vehiculeId) { alert('Sélectionnez un véhicule'); return; }
+    const res = await fetch(`/api/reservations/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehiculeId }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      const v = vehicules.find((x) => x._id === vehiculeId);
+      if (v) {
+        setReservations((prev) => prev.map((x) => x._id === id
+          ? { ...x, vehicule: { ...x.vehicule, _id: v._id, marque: v.marque, modele: v.modele, annee: v.annee } }
+          : x
+        ));
+      }
     } else {
       alert(json.message);
     }
@@ -173,8 +199,35 @@ export default function PageReservationsGerant() {
 
               {r.statut === 'confirmee' && (
                 <div style={{ marginTop: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '12px' }}>
+                  {/* Assignation véhicule */}
+                  {vehicules.length > 0 && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>
+                        Véhicule assigné : <span style={{ color: '#1B3B8A' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}</span>
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                          value={vehiculeSelectionne[r._id] || ''}
+                          onChange={(e) => setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
+                          style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                        >
+                          <option value="">— Changer de véhicule —</option>
+                          {vehicules.map((v) => (
+                            <option key={v._id} value={v._id}>{v.marque} {v.modele} {v.annee}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => assignerVehicule(r._id)}
+                          style={{ padding: '8px 16px', background: 'rgba(27,59,138,0.08)', color: '#1B3B8A', border: '1px solid rgba(27,59,138,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                        >
+                          Assigner
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Assignation chauffeur */}
                   {r.avecChauffeur && chauffeurs.length > 0 && (
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <select
                         value={chauffeurSelectionne[r._id] || ''}
                         onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
@@ -187,7 +240,7 @@ export default function PageReservationsGerant() {
                       </select>
                       <button
                         onClick={() => assignerChauffeur(r._id)}
-                        style={{ padding: '8px 16px', background: 'rgba(22,163,74,0.1)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+                        style={{ padding: '8px 16px', background: 'rgba(22,163,74,0.1)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
                       >
                         Assigner
                       </button>

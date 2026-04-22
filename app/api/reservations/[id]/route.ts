@@ -43,21 +43,33 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (!payload) return NextResponse.json<ApiResponse>({ success: false, message: 'Non authentifié' }, { status: 401 });
 
     const body = await req.json().catch(() => null);
-    if (!body?.statut) return NextResponse.json<ApiResponse>({ success: false, message: 'Statut manquant' }, { status: 400 });
+    if (!body || typeof body !== 'object')
+      return NextResponse.json<ApiResponse>({ success: false, message: 'Corps invalide' }, { status: 400 });
 
     await connectDB();
     const reservation = await Reservation.findById(params.id);
     if (!reservation) return NextResponse.json<ApiResponse>({ success: false, message: 'Réservation introuvable' }, { status: 404 });
 
-    // Gérant peut confirmer, refuser, terminer, assigner un chauffeur
+    // Gérant peut confirmer, refuser, terminer, assigner un chauffeur ou un véhicule
     if (payload.role === 'gerant') {
-      // Assignation d'un chauffeur (sans changer le statut principal)
+      // Assignation chauffeur (sans changer le statut principal)
       if (body.chauffeurId !== undefined) {
         reservation.chauffeur = body.chauffeurId || null;
         reservation.statutChauffeur = body.chauffeurId ? 'en_attente' : 'non_attribue';
         await reservation.save();
         return NextResponse.json<ApiResponse>({ success: true, data: reservation });
       }
+      // Assignation véhicule (sans changer le statut principal)
+      if (body.vehiculeId !== undefined) {
+        if (!body.vehiculeId)
+          return NextResponse.json<ApiResponse>({ success: false, message: 'vehiculeId requis' }, { status: 400 });
+        reservation.vehicule = body.vehiculeId;
+        await reservation.save();
+        const updated = await reservation.populate('vehicule', 'marque modele annee photos');
+        return NextResponse.json<ApiResponse>({ success: true, data: updated });
+      }
+      if (!body.statut)
+        return NextResponse.json<ApiResponse>({ success: false, message: 'Statut manquant' }, { status: 400 });
       const statutsAutorisesGerant = ['confirmee', 'refusee', 'terminee'];
       if (!statutsAutorisesGerant.includes(body.statut))
         return NextResponse.json<ApiResponse>({ success: false, message: 'Statut invalide' }, { status: 400 });

@@ -6,11 +6,11 @@ import Link from 'next/link';
 
 const SLIDES = [
   {
-    url: 'https://res.cloudinary.com/dfwyskgso/image/upload/v1776870636/top-service/hero/hero-1.jpg',
+    url: 'https://res.cloudinary.com/dfwyskgso/image/upload/f_auto,q_auto,c_fill,g_auto,w_1920,h_1080/top-service/hero/hero-1.jpg',
     alt: 'Flotte Top Service — Hilux, SUV, Jetour X70 Plus',
   },
   {
-    url: 'https://res.cloudinary.com/dfwyskgso/image/upload/v1776870637/top-service/hero/hero-2.jpg',
+    url: 'https://res.cloudinary.com/dfwyskgso/image/upload/f_auto,q_auto,c_fill,g_auto,w_1920,h_1080/top-service/hero/hero-2.png',
     alt: 'Top Service — Services et tarifs à l\'heure',
   },
 ];

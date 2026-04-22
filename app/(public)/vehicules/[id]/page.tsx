@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NavbarPublique from '@/app/components/NavbarPublique';
+import { CHAUFFEUR_JOUR, CHAUFFEUR_NUIT, tarifChauffeur } from '@/lib/tarifs';
 
 interface Vehicule {
   _id: string; marque: string; modele: string; annee: number; couleur: string; ville: string;
@@ -95,11 +96,18 @@ export default function PageDetailPublic() {
   if (!vehicule) return <div className="container"><div className="erreur">Véhicule introuvable</div></div>;
 
   const jours = calculerJours();
-  const prixChauffeurHeure = Math.round((vehicule.prixChauffeurParJour ?? 0) / 8);
-  const prixBaseChauffeur = avecChauffeur && vehicule.chauffeurDisponible && vehicule.prixChauffeurParJour
+
+  // Tarif chauffeur selon heure de début
+  const heureDebut = dateDebut ? new Date(dateDebut).getHours() : 8;
+  const tarifChauffeurApplicable = tarifChauffeur(heureDebut);
+  const labelTarifChauffeur = (heureDebut >= 21 || heureDebut < 6)
+    ? `Nuit (21h–6h) : ${CHAUFFEUR_NUIT.toLocaleString()} FCFA`
+    : `Jour (7h–21h) : ${CHAUFFEUR_JOUR.toLocaleString()} FCFA`;
+
+  const prixBaseChauffeur = avecChauffeur
     ? typeLocation === 'heure'
-      ? nombreHeures * prixChauffeurHeure
-      : jours * vehicule.prixChauffeurParJour
+      ? tarifChauffeurApplicable          // tarif fixe pour la plage (jour ou nuit)
+      : jours * CHAUFFEUR_JOUR            // location à la journée → tarif jour par défaut
     : 0;
   const prixTotal = typeLocation === 'heure'
     ? nombreHeures * (vehicule.prixParHeure ?? 0) + prixBaseChauffeur
@@ -224,9 +232,9 @@ export default function PageDetailPublic() {
           )}
 
           {/* Chauffeur */}
-          <div className="form-group" style={{ minWidth: '180px' }}>
+          <div className="form-group" style={{ minWidth: '200px' }}>
             <label>Chauffeur</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
               {([
                 { val: false, label: 'Sans' },
                 { val: true,  label: 'Avec' },
@@ -244,20 +252,43 @@ export default function PageDetailPublic() {
                 </button>
               ))}
             </div>
+            {/* Info tarifs */}
+            <p style={{ fontSize: '0.72rem', color: 'var(--gris)', margin: 0, lineHeight: 1.5 }}>
+              Jour (7h–21h) : <strong>{CHAUFFEUR_JOUR.toLocaleString()} FCFA</strong><br/>
+              Nuit (21h–6h) : <strong>{CHAUFFEUR_NUIT.toLocaleString()} FCFA</strong>
+            </p>
           </div>
         </div>
 
         {/* Récap prix */}
         {prixTotal > 0 && (
-          <div style={{ background: 'rgba(27,59,138,0.04)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', border: '1px solid rgba(27,59,138,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>
-              {typeLocation === 'heure'
-                ? `${nombreHeures} heure${nombreHeures > 1 ? 's' : ''} × ${vehicule.prixParHeure!.toLocaleString()} FCFA`
-                : `${jours} jour${jours > 1 ? 's' : ''} × ${vehicule.prixParJour.toLocaleString()} FCFA`}
-            </span>
-            <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--orange)' }}>
-              Total : {prixTotal.toLocaleString()} FCFA
-            </span>
+          <div style={{ background: 'rgba(27,59,138,0.04)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', border: '1px solid rgba(27,59,138,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', marginBottom: avecChauffeur && prixBaseChauffeur > 0 ? '6px' : 0 }}>
+              <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>
+                {typeLocation === 'heure'
+                  ? `${nombreHeures} heure${nombreHeures > 1 ? 's' : ''} × ${vehicule.prixParHeure!.toLocaleString()} FCFA`
+                  : `${jours} jour${jours > 1 ? 's' : ''} × ${vehicule.prixParJour.toLocaleString()} FCFA`}
+              </span>
+              <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>
+                {typeLocation === 'heure'
+                  ? (nombreHeures * (vehicule.prixParHeure ?? 0)).toLocaleString()
+                  : (jours * vehicule.prixParJour).toLocaleString()} FCFA
+              </span>
+            </div>
+            {avecChauffeur && prixBaseChauffeur > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>
+                  Chauffeur — {typeLocation === 'jour'
+                    ? `${jours} jour${jours > 1 ? 's' : ''} × ${CHAUFFEUR_JOUR.toLocaleString()} FCFA`
+                    : labelTarifChauffeur}
+                </span>
+                <span style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>{prixBaseChauffeur.toLocaleString()} FCFA</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(27,59,138,0.1)', paddingTop: '8px', marginTop: '4px' }}>
+              <span style={{ fontWeight: 700 }}>Total</span>
+              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--orange)' }}>{prixTotal.toLocaleString()} FCFA</span>
+            </div>
           </div>
         )}
 

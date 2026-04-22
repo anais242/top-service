@@ -9,6 +9,7 @@ import { COOKIE_ACCESS } from '@/lib/auth/cookies';
 import type { ApiResponse } from '@/types';
 import { envoyerEmailReservationClient, envoyerEmailReservationGerant } from '@/lib/emails/resend';
 import User from '@/models/User';
+import { CHAUFFEUR_JOUR, tarifChauffeur } from '@/lib/tarifs';
 
 // GET /api/reservations — liste selon le rôle
 export async function GET(req: NextRequest) {
@@ -89,15 +90,12 @@ export async function POST(req: NextRequest) {
       prixTotal = nombreJours * vehicule.prixParJour;
     }
 
-    // Tarif chauffeur en supplément
+    // Tarif chauffeur en supplément (tarifs fixes : 7 500 F jour / 10 000 F nuit)
     if (avecChauffeur) {
-      if (!vehicule.chauffeurDisponible)
-        return NextResponse.json<ApiResponse>({ success: false, message: 'Ce véhicule ne propose pas de chauffeur' }, { status: 400 });
-      if (vehicule.prixChauffeurParJour) {
-        if (typeLocation === 'jour')
-          prixTotal += nombreJours * vehicule.prixChauffeurParJour;
-        else if (typeLocation === 'heure' && nombreHeures)
-          prixTotal += nombreHeures * Math.round(vehicule.prixChauffeurParJour / 8);
+      if (typeLocation === 'jour') {
+        prixTotal += nombreJours * CHAUFFEUR_JOUR;
+      } else if (typeLocation === 'heure') {
+        prixTotal += tarifChauffeur(dateDebut.getHours());
       }
     }
 

@@ -102,7 +102,7 @@ export default function PageReservationsGerant() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="page-header">
         <h1 style={{ margin: 0 }}>Réservations</h1>
         <Link href="/gerant/tableau-de-bord" style={{ color: '#6b7280', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
           ← Tableau de bord
@@ -135,11 +135,11 @@ export default function PageReservationsGerant() {
           const s = STATUT[r.statut] ?? STATUT.en_attente;
           return (
             <div key={r._id} className="card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div className="resa-card-inner">
                 {r.vehicule?.photos?.[0] && (
-                  <img src={r.vehicule.photos[0]} alt="" style={{ width: '100px', height: '70px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
+                  <img src={r.vehicule.photos[0]} alt="" className="resa-thumb" />
                 )}
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <h3 style={{ margin: '0 0 2px' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}</h3>

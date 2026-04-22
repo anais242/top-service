@@ -123,7 +123,7 @@ export default function PageDetailPublic() {
         <Link href="/vehicules" style={{ color: 'var(--gris)', textDecoration: 'none', fontSize: '0.9rem' }}>← Retour au catalogue</Link>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
+      <div className="detail-grid">
         {/* Colonne gauche */}
         <div>
           <div className="card" style={{ padding: '0', overflow: 'hidden', marginBottom: '20px' }}>
@@ -157,7 +157,7 @@ export default function PageDetailPublic() {
         </div>
 
         {/* Colonne droite — formulaire réservation */}
-        <div className="card" style={{ position: 'sticky', top: '20px' }}>
+        <div className="card detail-sidebar">
           {/* Prix */}
           <div style={{ marginBottom: '20px' }}>
             <div style={{ textAlign: 'center' }}>
@@ -270,7 +270,8 @@ export default function PageDetailPublic() {
               style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.9rem', resize: 'vertical' }} />
           </div>
 
-          <button className="btn" style={{ width: '100%' }} onClick={handleReserver} disabled={soumission || !dateDebut || !dateFin}>
+          <button className="btn" style={{ width: '100%' }} onClick={handleReserver}
+            disabled={soumission || !dateDebut || (typeLocation === 'jour' && !dateFin)}>
             {soumission ? 'Traitement...' : 'Réserver ce véhicule'}
           </button>
 

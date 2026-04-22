@@ -45,9 +45,9 @@ function ContenuReservations() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="page-header">
         <h1 style={{ margin: 0 }}>Mes réservations</h1>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="page-header-actions">
           <Link href="/vehicules" style={{ textDecoration: 'none' }}>
             <button className="btn" style={{ padding: '8px 16px' }}>+ Nouvelle réservation</button>
           </Link>
@@ -79,12 +79,12 @@ function ContenuReservations() {
           const s = STATUT[r.statut] ?? STATUT.en_attente;
           return (
             <div key={r._id} className="card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div className="resa-card-inner">
                 {r.vehicule?.photos?.[0] && (
-                  <img src={r.vehicule.photos[0]} alt="" style={{ width: '100px', height: '70px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
+                  <img src={r.vehicule.photos[0]} alt="" className="resa-thumb" />
                 )}
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
                     <h3 style={{ margin: '0 0 4px' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}</h3>
                     <span style={{ background: s.bg, color: s.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>{s.label}</span>
                   </div>

@@ -408,14 +408,56 @@ body {
 ::-webkit-scrollbar-thumb { background: #BFDBFE; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #2563EB; }
 
+/* ─── GRILLE DÉTAIL VÉHICULE ─── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+.detail-sidebar {
+  position: sticky;
+  top: 80px;
+}
+
+/* ─── EN-TÊTES DE PAGES (titre + actions) ─── */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.page-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ─── CARTE RÉSERVATION ─── */
+.resa-card-inner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.resa-thumb {
+  width: 100px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   .container     { padding: 20px 16px; }
   .container-sm  { padding: 32px 16px; }
   .navbar        { padding: 12px 16px; }
-  .card          { padding: 24px 18px; }
+  .card          { padding: 20px 14px; }
 
-  /* Masque les liens desktop dans la navbar (le dropdown les contient déjà) */
+  /* Masque les liens desktop dans la navbar */
   .navbar-links  { display: none !important; }
 
   /* Grilles dashboard → colonne unique */
@@ -423,16 +465,40 @@ body {
   .dash-bottom   { grid-template-columns: 1fr !important; }
   .dash-kpis     { grid-template-columns: repeat(2, 1fr) !important; }
 
-  /* Landing — navbar actions */
+  /* Page détail véhicule : empile les 2 colonnes */
+  .detail-grid   { grid-template-columns: 1fr !important; }
+  .detail-sidebar { position: static !important; }
+
+  /* Landing — masque le bouton ghost sur mobile */
   .landing-nav-actions .btn-ghost { display: none; }
 
-  /* "Comment ça marche" — cache les flèches, passe en colonne */
+  /* "Comment ça marche" — colonne + rotation flèches */
   .steps-wrapper { flex-direction: column !important; align-items: center !important; }
   .steps-arrow   { transform: rotate(90deg); }
 
-  /* Masque le nom dans les navbars sur très petit écran */
+  /* Masque le nom utilisateur sur très petit écran */
   .navbar-nom { display: none; }
 
   /* Recharts — évite le débordement */
   .recharts-wrapper { font-size: 11px; }
+
+  /* En-têtes de pages : empile titre et actions */
+  .page-header   { flex-direction: column; align-items: flex-start; }
+
+  /* Cartes réservation : image cachée sur très petits écrans */
+  .resa-thumb    { display: none; }
+
+  /* Filtres de liste */
+  .filter-row    { flex-wrap: wrap !important; }
+
+  /* Formulaire réservation : bouton plein */
+  .btn-reserver  { width: 100% !important; }
+}
+
+@media (max-width: 480px) {
+  .navbar        { padding: 10px 12px; }
+  .navbar-brand  { font-size: 1.1rem !important; }
+  .detail-grid   { gap: 16px !important; }
+  .card          { padding: 16px 12px; }
+  .dash-kpis     { grid-template-columns: 1fr 1fr !important; }
 }

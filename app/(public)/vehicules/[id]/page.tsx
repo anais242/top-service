@@ -32,6 +32,7 @@ export default function PageDetailPublic() {
   const [nombreHeures, setNombreHeures] = useState(1);
   const [avecChauffeur, setAvecChauffeur] = useState(false);
   const [message, setMessage] = useState('');
+  const [cguAcceptees, setCguAcceptees] = useState(false);
   const [erreurForm, setErreurForm] = useState('');
   const [soumission, setSoumission] = useState(false);
 
@@ -300,9 +301,23 @@ export default function PageDetailPublic() {
               placeholder="Informations supplémentaires..."
               style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.9rem', resize: 'vertical' }} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '200px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={cguAcceptees}
+                onChange={(e) => setCguAcceptees(e.target.checked)}
+                style={{ marginTop: '2px', width: '16px', height: '16px', flexShrink: 0, accentColor: '#1B3B8A', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '0.8rem', color: 'var(--gris)', lineHeight: 1.5 }}>
+                J'accepte les{' '}
+                <a href="/conditions-generales" target="_blank" style={{ color: '#1B3B8A', fontWeight: 600, textDecoration: 'underline' }}>
+                  conditions générales d'utilisation
+                </a>
+              </span>
+            </label>
             <button className="btn" onClick={handleReserver}
-              disabled={soumission || !dateDebut || (typeLocation === 'jour' && !dateFin)}
+              disabled={soumission || !dateDebut || (typeLocation === 'jour' && !dateFin) || !cguAcceptees}
               style={{ width: '100%' }}>
               {soumission ? 'Traitement...' : 'Réserver ce véhicule'}
             </button>

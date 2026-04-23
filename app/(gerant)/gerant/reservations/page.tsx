@@ -35,6 +35,8 @@ export default function PageReservationsGerant() {
   const [chauffeurSelectionne, setChauffeurSelectionne] = useState<Record<string, string>>({});
   const [vehiculeSelectionne, setVehiculeSelectionne] = useState<Record<string, string>>({});
   const [erreurVehicule, setErreurVehicule] = useState<Record<string, string>>({});
+  const [autoAssignEnCours, setAutoAssignEnCours] = useState(false);
+  const [msgAutoAssign, setMsgAutoAssign] = useState('');
 
   async function chargerVehicules() {
     const vj = await fetch('/api/vehicules?limite=100').then((r) => r.json());
@@ -122,6 +124,26 @@ export default function PageReservationsGerant() {
     }
   }
 
+  async function autoAssigner() {
+    setAutoAssignEnCours(true);
+    setMsgAutoAssign('');
+    try {
+      const res = await fetch('/api/gerant/auto-assigner', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const json = await res.json();
+      if (json.success) {
+        setMsgAutoAssign(json.message);
+        if (json.data.assignees > 0) {
+          // Recharge les réservations pour refléter les nouveaux véhicules assignés
+          const rj = await fetch('/api/reservations').then((r) => r.json());
+          if (rj.success) setReservations(rj.data);
+        }
+      } else {
+        setMsgAutoAssign(json.message);
+      }
+    } catch { setMsgAutoAssign('Erreur réseau'); }
+    finally { setAutoAssignEnCours(false); }
+  }
+
   async function assignerVehicule(id: string) {
     const vehiculeId = vehiculeSelectionne[id];
     if (!vehiculeId) { alert('Sélectionnez un véhicule'); return; }
@@ -156,10 +178,25 @@ export default function PageReservationsGerant() {
     <div className="container">
       <div className="page-header">
         <h1 style={{ margin: 0 }}>Réservations</h1>
-        <Link href="/gerant/tableau-de-bord" style={{ color: '#6b7280', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-          ← Tableau de bord
-        </Link>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={autoAssigner}
+            disabled={autoAssignEnCours}
+            style={{ padding: '8px 16px', background: autoAssignEnCours ? '#e5e7eb' : 'rgba(27,59,138,0.08)', color: autoAssignEnCours ? '#9ca3af' : '#1B3B8A', border: '1px solid rgba(27,59,138,0.2)', borderRadius: '8px', cursor: autoAssignEnCours ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+          >
+            {autoAssignEnCours ? 'En cours...' : '⚡ Auto-assigner'}
+          </button>
+          <Link href="/gerant/tableau-de-bord" style={{ color: '#6b7280', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+            ← Tableau de bord
+          </Link>
+        </div>
       </div>
+
+      {msgAutoAssign && (
+        <div style={{ marginBottom: '16px', padding: '10px 16px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', color: '#166534', fontSize: '0.875rem', fontWeight: 600 }}>
+          ⚡ {msgAutoAssign}
+        </div>
+      )}
 
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
@@ -233,65 +270,71 @@ export default function PageReservationsGerant() {
                 const vehiculeActuelOccupe = occupes.has(r.vehicule?._id ?? '');
                 const aucunRemplacant = vehiculeActuelOccupe && !vehiculeSelectionne[r._id];
                 return (
-                <div style={{ marginTop: '16px', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
+                <div style={{ marginTop: '16px', borderTop: '1px solid #f3f4f6', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-                  {/* Alerte conflit véhicule */}
-                  {vehiculeActuelOccupe && (
-                    <div style={{ marginBottom: '12px', padding: '12px 14px', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px' }}>
-                      <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#dc2626', fontSize: '0.875rem' }}>
-                        ⚠ Ce véhicule est déjà confirmé sur ces dates
-                      </p>
-                      <p style={{ margin: '0 0 10px', color: '#7f1d1d', fontSize: '0.8rem' }}>
-                        Vous devez assigner un autre véhicule disponible avant de confirmer.
-                      </p>
-                      <Link href="/gerant/vehicules?retour=reservations" style={{ display: 'inline-block', padding: '6px 14px', background: '#1B3B8A', color: 'white', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
-                        Créer / voir le parc auto →
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Sélection véhicule */}
-                  {vehicules.length > 0 && (
-                    <div style={{ marginBottom: '10px' }}>
-                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>
-                        Véhicule demandé : <span style={{ color: vehiculeActuelOccupe ? '#dc2626' : '#1B3B8A' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}{vehiculeActuelOccupe ? ' (occupé)' : ''}</span>
-                      </p>
+                  {/* Bloc véhicule */}
+                  <div style={{ padding: '10px 12px', background: vehiculeActuelOccupe ? '#fef2f2' : '#f9fafb', border: `1.5px solid ${vehiculeActuelOccupe ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '8px' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.8rem', fontWeight: 700, color: vehiculeActuelOccupe ? '#dc2626' : '#374151' }}>
+                      Véhicule {vehiculeActuelOccupe ? '⚠ occupé sur ces dates' : 'assigné'}
+                    </p>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.875rem', color: '#374151', fontWeight: 600 }}>
+                      {r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <select
                         value={vehiculeSelectionne[r._id] || ''}
                         onChange={(e) => { setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value })); setErreurVehicule((e) => ({ ...e, [r._id]: '' })); }}
-                        style={{ width: '100%', padding: '8px 12px', border: `1.5px solid ${vehiculeActuelOccupe && !vehiculeSelectionne[r._id] ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                        style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
                       >
-                        <option value="">{vehiculeActuelOccupe ? '— Choisir un véhicule disponible —' : '— Garder le véhicule actuel —'}</option>
+                        <option value="">{vehiculeActuelOccupe ? '— Choisir un remplaçant —' : '— Changer de véhicule —'}</option>
                         {vehicules.map((v) => (
                           <option key={v._id} value={v._id} disabled={occupes.has(v._id)}>
-                            {v.marque} {v.modele} {v.annee}{occupes.has(v._id) ? ' (occupé sur ces dates)' : ''}
+                            {v.marque} {v.modele} {v.annee}{occupes.has(v._id) ? ' (occupé)' : ''}
                           </option>
                         ))}
                       </select>
+                      <button
+                        onClick={() => assignerVehicule(r._id)}
+                        disabled={!vehiculeSelectionne[r._id]}
+                        style={{ padding: '8px 14px', background: vehiculeSelectionne[r._id] ? 'rgba(27,59,138,0.08)' : '#f3f4f6', color: vehiculeSelectionne[r._id] ? '#1B3B8A' : '#9ca3af', border: `1px solid ${vehiculeSelectionne[r._id] ? 'rgba(27,59,138,0.2)' : '#e5e7eb'}`, borderRadius: '8px', cursor: vehiculeSelectionne[r._id] ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                      >
+                        Assigner
+                      </button>
                     </div>
-                  )}
+                    {erreurVehicule[r._id] && <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626' }}>⚠ {erreurVehicule[r._id]}</p>}
+                    {vehiculeActuelOccupe && (
+                      <Link href="/gerant/vehicules?retour=reservations" style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.75rem', color: '#1B3B8A', fontWeight: 600, textDecoration: 'underline' }}>
+                        Créer un nouveau véhicule →
+                      </Link>
+                    )}
+                  </div>
 
-                  {/* Sélection chauffeur */}
+                  {/* Bloc chauffeur */}
                   {r.avecChauffeur && chauffeurs.length > 0 && (
-                    <div style={{ marginBottom: '10px' }}>
-                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>Chauffeur</p>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <select
                         value={chauffeurSelectionne[r._id] || ''}
                         onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
-                        style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                        style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
                       >
-                        <option value="">— Auto-assignation —</option>
+                        <option value="">— Chauffeur (auto-assignation) —</option>
                         {chauffeurs.map((c) => (
                           <option key={c._id} value={c._id} disabled={!!c.estOccupe}>
                             {c.nom}{c.estOccupe ? ' (occupé)' : ''}
                           </option>
                         ))}
                       </select>
+                      <button
+                        onClick={() => assignerChauffeur(r._id)}
+                        style={{ padding: '8px 14px', background: 'rgba(22,163,74,0.08)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                      >
+                        Assigner
+                      </button>
                     </div>
                   )}
 
                   {/* Message */}
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label style={{ fontSize: '0.875rem' }}>Message au client (optionnel)</label>
                     <input
                       type="text" placeholder="Ex : Rendez-vous à l'agence à 9h"
@@ -299,9 +342,11 @@ export default function PageReservationsGerant() {
                       onChange={(e) => setMessageGerant((m) => ({ ...m, [r._id]: e.target.value }))}
                     />
                   </div>
+
+                  {/* Confirmer / Refuser */}
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
-                      onClick={() => changerStatut(r._id, 'confirmee', { chauffeurId: chauffeurSelectionne[r._id], vehiculeId: vehiculeSelectionne[r._id] })}
+                      onClick={() => changerStatut(r._id, 'confirmee', { chauffeurId: chauffeurSelectionne[r._id] })}
                       disabled={aucunRemplacant}
                       style={{ flex: 1, padding: '10px', background: aucunRemplacant ? '#e5e7eb' : '#dcfce7', color: aucunRemplacant ? '#9ca3af' : '#166534', border: 'none', borderRadius: '8px', cursor: aucunRemplacant ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                       ✓ Confirmer

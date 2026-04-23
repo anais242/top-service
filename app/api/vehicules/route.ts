@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db/mongodb';
 import Vehicule from '@/models/Vehicule';
+import Reservation from '@/models/Reservation';
 import { schemaVehicule } from '@/lib/validation/vehicule.schemas';
 import { verifierAccessToken } from '@/lib/auth/jwt';
 import { COOKIE_ACCESS } from '@/lib/auth/cookies';
@@ -60,7 +61,37 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const vehicule = await Vehicule.create(validation.data);
 
-    return NextResponse.json<ApiResponse>({ success: true, data: vehicule }, { status: 201 });
+    // Auto-assignation : tente de combler les réservations en_attente sans véhicule disponible
+    let autoAssignes = 0;
+    try {
+      const pending = await Reservation.find({ statut: 'en_attente' })
+        .populate('vehicule', '_id').lean();
+
+      for (const resa of pending) {
+        const vidActuel = (resa.vehicule as { _id: { toString(): string } })?._id?.toString();
+        const conflit = vidActuel ? await Reservation.findOne({
+          _id: { $ne: resa._id }, vehicule: vidActuel, statut: 'confirmee',
+          dateDebut: { $lt: resa.dateFin }, dateFin: { $gt: resa.dateDebut },
+        }).lean() : true;
+        if (!conflit) continue;
+
+        const occupe = await Reservation.findOne({
+          _id: { $ne: resa._id }, vehicule: vehicule._id, statut: 'confirmee',
+          dateDebut: { $lt: resa.dateFin }, dateFin: { $gt: resa.dateDebut },
+        }).lean();
+        if (!occupe) {
+          await Reservation.findByIdAndUpdate(resa._id, { vehicule: vehicule._id });
+          autoAssignes++;
+        }
+      }
+    } catch (e) {
+      console.error('[auto-assigner après création]', e);
+    }
+
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      data: { ...vehicule.toObject(), autoAssignes },
+    }, { status: 201 });
   } catch (error) {
     console.error('[POST /api/vehicules]', error);
     return NextResponse.json<ApiResponse>({ success: false, message: 'Erreur serveur' }, { status: 500 });

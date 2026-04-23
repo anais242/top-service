@@ -67,6 +67,9 @@ function FormNouveauVehicule() {
       const json = await res.json();
       if (!res.ok) { setErreur(json.message || 'Erreur'); return; }
       setVehiculeId(json.data._id);
+      if (json.data.autoAssignes > 0) {
+        alert(`✅ Véhicule créé. ${json.data.autoAssignes} réservation${json.data.autoAssignes > 1 ? 's' : ''} en attente ${json.data.autoAssignes > 1 ? 'ont été automatiquement réassignées' : 'a été automatiquement réassignée'} à ce véhicule.`);
+      }
     } catch {
       setErreur('Impossible de contacter le serveur');
     } finally {

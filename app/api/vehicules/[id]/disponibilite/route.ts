@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const reservations = await Reservation.find({
       vehicule: params.id,
-      statut: { $in: ['en_attente', 'confirmee'] },
+      statut: 'confirmee',
       dateDebut: { $lte: fin },
       dateFin:   { $gte: debut },
     }).select('dateDebut dateFin statut').lean();

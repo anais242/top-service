@@ -115,16 +115,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Seules les réservations confirmées bloquent le client — les demandes en attente ne bloquent pas
-    const conflit = await Reservation.findOne({
-      vehicule: vehiculeId,
-      statut: 'confirmee',
-      dateDebut: { $lt: dateFin },
-      dateFin:   { $gt: dateDebut },
-    });
-    if (conflit)
-      return NextResponse.json<ApiResponse>({ success: false, message: 'Ce créneau est déjà réservé pour ce véhicule' }, { status: 409 });
-
     const reservation = await Reservation.create({
       vehicule: vehiculeId,
       client: payload.userId,

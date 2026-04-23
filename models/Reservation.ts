@@ -20,6 +20,7 @@ export interface IReservation extends Document {
   messageClient: string;
   messageGerant: string;
   notifClient?: { message: string; lu: boolean; date: Date } | null;
+  annulationInfo?: { montantConsomme: number; montantRembourse: number; date: Date } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,7 +41,8 @@ const reservationSchema = new Schema<IReservation>(
     statutChauffeur: { type: String, enum: ['non_attribue', 'en_attente', 'acceptee', 'refusee'], default: 'non_attribue' },
     messageClient: { type: String, maxlength: 500, default: '' },
     messageGerant: { type: String, maxlength: 500, default: '' },
-    notifClient:   { type: Schema.Types.Mixed, default: null },
+    notifClient:    { type: Schema.Types.Mixed, default: null },
+    annulationInfo: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );

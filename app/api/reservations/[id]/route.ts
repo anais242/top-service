@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (payload.role === 'gerant') {
       if (body.statut) {
         // Changement de statut (avec chauffeur/véhicule optionnels en même temps)
-        const statutsAutorisesGerant = ['confirmee', 'refusee', 'terminee'];
+        const statutsAutorisesGerant = ['confirmee', 'refusee', 'terminee', 'annulee'];
         if (!statutsAutorisesGerant.includes(body.statut))
           return NextResponse.json<ApiResponse>({ success: false, message: 'Statut invalide' }, { status: 400 });
 
@@ -99,6 +99,32 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           const vehiculeAVerifier = (body.vehiculeId || reservation.vehicule).toString();
           const erreur = await verifierDisponibiliteVehicule(vehiculeAVerifier);
           if (erreur) return NextResponse.json<ApiResponse>({ success: false, message: erreur }, { status: 409 });
+        }
+
+        // Annulation d'une réservation déjà confirmée — calcul part consommée
+        if (body.statut === 'annulee' && reservation.statut === 'confirmee') {
+          const now = new Date();
+          const debut = new Date(reservation.dateDebut);
+          const fin   = new Date(reservation.dateFin);
+          let montantConsomme = 0;
+          let montantRembourse = reservation.prixTotal;
+          if (now > debut) {
+            if (reservation.typeLocation === 'heure' || now >= fin) {
+              montantConsomme  = reservation.prixTotal;
+              montantRembourse = 0;
+            } else {
+              const joursConsommes = Math.min(Math.ceil((now.getTime() - debut.getTime()) / 86400000), reservation.nombreJours);
+              montantConsomme  = Math.round((joursConsommes / reservation.nombreJours) * reservation.prixTotal);
+              montantRembourse = reservation.prixTotal - montantConsomme;
+            }
+          }
+          reservation.annulationInfo = { montantConsomme, montantRembourse, date: now };
+          reservation.markModified('annulationInfo');
+          // Libère le véhicule si aucune autre réservation confirmée active
+          const autreActive = await Reservation.findOne({ _id: { $ne: params.id }, vehicule: reservation.vehicule, statut: 'confirmee', dateFin: { $gt: now } });
+          if (!autreActive) await Vehicule.findByIdAndUpdate(reservation.vehicule, { statut: 'disponible' });
+          // Libère le chauffeur
+          reservation.statutChauffeur = 'non_attribue';
         }
 
         reservation.statut = body.statut;

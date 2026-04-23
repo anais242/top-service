@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/cloturer-reservations",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}

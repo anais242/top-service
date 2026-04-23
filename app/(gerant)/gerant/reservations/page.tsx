@@ -10,11 +10,12 @@ interface Reservation {
   _id: string;
   vehicule: { _id?: string; marque: string; modele: string; annee: number; photos: string[] };
   client: { nom: string; email: string; telephone: string; permisRecto?: string; permisVerso?: string };
-  dateDebut: string; dateFin: string; nombreJours: number;
+  dateDebut: string; dateFin: string; nombreJours: number; typeLocation?: string;
   prixTotal: number; statut: string; messageClient: string; createdAt: string;
   avecChauffeur?: boolean;
   chauffeur?: { _id: string; nom: string } | null;
   statutChauffeur?: string;
+  annulationInfo?: { montantConsomme: number; montantRembourse: number; date: string } | null;
 }
 
 const STATUT: Record<string, { label: string; bg: string; color: string }> = {
@@ -37,6 +38,7 @@ export default function PageReservationsGerant() {
   const [erreurVehicule, setErreurVehicule] = useState<Record<string, string>>({});
   const [autoAssignEnCours, setAutoAssignEnCours] = useState(false);
   const [msgAutoAssign, setMsgAutoAssign] = useState('');
+  const [annulationEnAttente, setAnnulationEnAttente] = useState<string | null>(null);
 
   async function chargerVehicules() {
     const vj = await fetch('/api/vehicules?limite=100').then((r) => r.json());
@@ -170,6 +172,35 @@ export default function PageReservationsGerant() {
     }
   }
 
+  function calcAnnulation(r: Reservation) {
+    const now = new Date();
+    const debut = new Date(r.dateDebut);
+    const fin   = new Date(r.dateFin);
+    if (now <= debut) return { montantConsomme: 0, montantRembourse: r.prixTotal, enCours: false };
+    if (now >= fin || r.typeLocation === 'heure') return { montantConsomme: r.prixTotal, montantRembourse: 0, enCours: true };
+    const joursConsommes = Math.min(Math.ceil((now.getTime() - debut.getTime()) / 86400000), r.nombreJours);
+    const montantConsomme  = Math.round((joursConsommes / r.nombreJours) * r.prixTotal);
+    const montantRembourse = r.prixTotal - montantConsomme;
+    return { montantConsomme, montantRembourse, enCours: true, joursConsommes, joursRestants: r.nombreJours - joursConsommes };
+  }
+
+  async function annulerReservation(id: string) {
+    const res = await fetch(`/api/reservations/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statut: 'annulee' }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      setReservations((prev) => prev.map((x) => x._id === id
+        ? { ...x, statut: 'annulee', annulationInfo: json.data?.annulationInfo ?? null }
+        : x
+      ));
+      setAnnulationEnAttente(null);
+    } else {
+      alert(json.message);
+    }
+  }
+
   const reservationsFiltrees = filtre === 'tous'
     ? reservations
     : reservations.filter((r) => r.statut === filtre);
@@ -205,6 +236,7 @@ export default function PageReservationsGerant() {
           { val: 'en_attente', label: `En attente (${reservations.filter((r) => r.statut === 'en_attente').length})` },
           { val: 'confirmee', label: 'Confirmées' },
           { val: 'refusee', label: 'Refusées' },
+          { val: 'annulee', label: 'Annulées' },
           { val: 'terminee', label: 'Terminées' },
         ].map(({ val, label }) => (
           <button key={val} onClick={() => setFiltre(val)} style={{
@@ -246,6 +278,12 @@ export default function PageReservationsGerant() {
                     <p style={{ margin: '8px 0 0', padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '0.875rem', color: '#374151' }}>
                       Message client : {r.messageClient}
                     </p>
+                  )}
+                  {r.statut === 'annulee' && r.annulationInfo && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', fontSize: '0.82rem' }}>
+                      <span style={{ color: '#c2410c', fontWeight: 700 }}>Bilan annulation — </span>
+                      Consommé : <strong>{r.annulationInfo.montantConsomme.toLocaleString()} FCFA</strong> · Remboursé : <strong style={{ color: '#166534' }}>{r.annulationInfo.montantRembourse.toLocaleString()} FCFA</strong>
+                    </div>
                   )}
                   {/* Permis de conduire — visible uniquement par le gérant */}
                   {!r.avecChauffeur && (r.client?.permisRecto || r.client?.permisVerso) && (
@@ -438,11 +476,33 @@ export default function PageReservationsGerant() {
                       </button>
                     </div>
                   )}
-                  <div style={{ textAlign: 'right' }}>
-                    <button onClick={() => changerStatut(r._id, 'terminee')} style={{ padding: '8px 20px', background: '#e0e7ff', color: '#3730a3', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
-                      Marquer comme terminée
-                    </button>
-                  </div>
+                  {annulationEnAttente === r._id ? (() => {
+                    const calc = calcAnnulation(r);
+                    return (
+                      <div style={{ padding: '14px', background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: '10px' }}>
+                        <p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: '0.875rem', color: '#c2410c' }}>Confirmer l'annulation ?</p>
+                        {calc.enCours ? (
+                          <>
+                            <p style={{ margin: '0 0 4px', fontSize: '0.82rem', color: '#374151' }}>Location en cours — bilan :</p>
+                            <p style={{ margin: '0 0 2px', fontSize: '0.82rem' }}>Consommé ({calc.joursConsommes} jour{(calc.joursConsommes ?? 0) > 1 ? 's' : ''}) : <strong>{calc.montantConsomme.toLocaleString()} FCFA</strong></p>
+                            <p style={{ margin: '0 0 10px', fontSize: '0.82rem' }}>À rembourser ({calc.joursRestants} jour{(calc.joursRestants ?? 0) > 1 ? 's' : ''}) : <strong style={{ color: '#166534' }}>{calc.montantRembourse.toLocaleString()} FCFA</strong></p>
+                          </>
+                        ) : (
+                          <p style={{ margin: '0 0 10px', fontSize: '0.82rem', color: '#166534' }}>Avant le début — remboursement total : <strong>{calc.montantRembourse.toLocaleString()} FCFA</strong></p>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => annulerReservation(r._id)} style={{ flex: 1, padding: '8px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}>Confirmer l'annulation</button>
+                          <button onClick={() => setAnnulationEnAttente(null)} style={{ flex: 1, padding: '8px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}>Annuler</button>
+                        </div>
+                      </div>
+                    );
+                  })() : (
+                    <div style={{ textAlign: 'right' }}>
+                      <button onClick={() => setAnnulationEnAttente(r._id)} style={{ padding: '8px 20px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                        Annuler la réservation
+                      </button>
+                    </div>
+                  )}
                 </div>
                 );
               })()}

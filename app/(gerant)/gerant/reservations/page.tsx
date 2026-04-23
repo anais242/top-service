@@ -47,10 +47,13 @@ export default function PageReservationsGerant() {
     }).finally(() => setChargement(false));
   }, []);
 
-  async function changerStatut(id: string, statut: string) {
+  async function changerStatut(id: string, statut: string, opts?: { chauffeurId?: string; vehiculeId?: string }) {
+    const body: Record<string, unknown> = { statut, messageGerant: messageGerant[id] || '' };
+    if (opts?.chauffeurId !== undefined) body.chauffeurId = opts.chauffeurId || null;
+    if (opts?.vehiculeId) body.vehiculeId = opts.vehiculeId;
     const res = await fetch(`/api/reservations/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ statut, messageGerant: messageGerant[id] || '' }),
+      body: JSON.stringify(body),
     });
     const json = await res.json();
     if (json.success) {
@@ -195,6 +198,43 @@ export default function PageReservationsGerant() {
 
               {r.statut === 'en_attente' && (
                 <div style={{ marginTop: '16px', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
+                  {/* Sélection véhicule */}
+                  {vehicules.length > 0 && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>
+                        Véhicule : <span style={{ color: '#1B3B8A' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}</span>
+                      </p>
+                      <select
+                        value={vehiculeSelectionne[r._id] || ''}
+                        onChange={(e) => setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                      >
+                        <option value="">— Garder le véhicule actuel —</option>
+                        {vehicules.map((v) => (
+                          <option key={v._id} value={v._id}>{v.marque} {v.modele} {v.annee}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {/* Sélection chauffeur */}
+                  {r.avecChauffeur && chauffeurs.length > 0 && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>Chauffeur</p>
+                      <select
+                        value={chauffeurSelectionne[r._id] || ''}
+                        onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                      >
+                        <option value="">— Auto-assignation —</option>
+                        {chauffeurs.map((c) => (
+                          <option key={c._id} value={c._id} disabled={!!c.estOccupe}>
+                            {c.nom}{c.estOccupe ? ' (occupé)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {/* Message */}
                   <div className="form-group" style={{ marginBottom: '12px' }}>
                     <label style={{ fontSize: '0.875rem' }}>Message au client (optionnel)</label>
                     <input
@@ -204,7 +244,7 @@ export default function PageReservationsGerant() {
                     />
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => changerStatut(r._id, 'confirmee')} style={{ flex: 1, padding: '10px', background: '#dcfce7', color: '#166534', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                    <button onClick={() => changerStatut(r._id, 'confirmee', { chauffeurId: chauffeurSelectionne[r._id], vehiculeId: vehiculeSelectionne[r._id] })} style={{ flex: 1, padding: '10px', background: '#dcfce7', color: '#166534', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
                       ✓ Confirmer
                     </button>
                     <button onClick={() => changerStatut(r._id, 'refusee')} style={{ flex: 1, padding: '10px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>

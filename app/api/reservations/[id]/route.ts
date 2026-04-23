@@ -52,44 +52,50 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Gérant peut confirmer, refuser, terminer, assigner un chauffeur ou un véhicule
     if (payload.role === 'gerant') {
-      // Assignation chauffeur (sans changer le statut principal)
-      if (body.chauffeurId !== undefined) {
+      if (body.statut) {
+        // Changement de statut (avec chauffeur/véhicule optionnels en même temps)
+        const statutsAutorisesGerant = ['confirmee', 'refusee', 'terminee'];
+        if (!statutsAutorisesGerant.includes(body.statut))
+          return NextResponse.json<ApiResponse>({ success: false, message: 'Statut invalide' }, { status: 400 });
+        reservation.statut = body.statut;
+        if (body.messageGerant) reservation.messageGerant = body.messageGerant;
+
+        // Véhicule pré-sélectionné
+        if (body.vehiculeId) reservation.vehicule = body.vehiculeId;
+
+        // Chauffeur : pré-sélectionné > auto-assignation
+        if (body.chauffeurId !== undefined) {
+          reservation.chauffeur = body.chauffeurId || null;
+          reservation.statutChauffeur = body.chauffeurId ? 'en_attente' : 'non_attribue';
+        } else if (body.statut === 'confirmee' && reservation.avecChauffeur && !reservation.chauffeur) {
+          const reservationsActives = await Reservation.find({
+            statut: 'confirmee',
+            statutChauffeur: { $in: ['en_attente', 'acceptee'] },
+            chauffeur: { $ne: null },
+          }).select('chauffeur').lean();
+          const occupe = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
+          const chauffeurLibre = await User.findOne({ role: 'chauffeur', actif: true, _id: { $nin: Array.from(occupe) } }).lean();
+          if (chauffeurLibre) {
+            reservation.chauffeur = chauffeurLibre._id;
+            reservation.statutChauffeur = 'en_attente';
+          }
+        }
+      } else if (body.chauffeurId !== undefined) {
+        // Assignation chauffeur seul (post-confirmation)
         reservation.chauffeur = body.chauffeurId || null;
         reservation.statutChauffeur = body.chauffeurId ? 'en_attente' : 'non_attribue';
         await reservation.save();
         return NextResponse.json<ApiResponse>({ success: true, data: reservation });
-      }
-      // Assignation véhicule (sans changer le statut principal)
-      if (body.vehiculeId !== undefined) {
+      } else if (body.vehiculeId !== undefined) {
+        // Assignation véhicule seul (post-confirmation)
         if (!body.vehiculeId)
           return NextResponse.json<ApiResponse>({ success: false, message: 'vehiculeId requis' }, { status: 400 });
         reservation.vehicule = body.vehiculeId;
         await reservation.save();
         const updated = await reservation.populate('vehicule', 'marque modele annee photos');
         return NextResponse.json<ApiResponse>({ success: true, data: updated });
-      }
-      if (!body.statut)
-        return NextResponse.json<ApiResponse>({ success: false, message: 'Statut manquant' }, { status: 400 });
-      const statutsAutorisesGerant = ['confirmee', 'refusee', 'terminee'];
-      if (!statutsAutorisesGerant.includes(body.statut))
-        return NextResponse.json<ApiResponse>({ success: false, message: 'Statut invalide' }, { status: 400 });
-      reservation.statut = body.statut;
-      if (body.messageGerant) reservation.messageGerant = body.messageGerant;
-
-      // Auto-assignation du premier chauffeur libre si réservation avec chauffeur
-      if (body.statut === 'confirmee' && reservation.avecChauffeur && !reservation.chauffeur) {
-        const reservationsActives = await Reservation.find({
-          statut: 'confirmee',
-          statutChauffeur: { $in: ['en_attente', 'acceptee'] },
-          chauffeur: { $ne: null },
-        }).select('chauffeur').lean();
-        const occupe = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
-
-        const chauffeurLibre = await User.findOne({ role: 'chauffeur', actif: true, _id: { $nin: Array.from(occupe) } }).lean();
-        if (chauffeurLibre) {
-          reservation.chauffeur = chauffeurLibre._id;
-          reservation.statutChauffeur = 'en_attente';
-        }
+      } else {
+        return NextResponse.json<ApiResponse>({ success: false, message: 'Paramètre manquant' }, { status: 400 });
       }
     }
     // Client peut uniquement annuler ses propres réservations en attente

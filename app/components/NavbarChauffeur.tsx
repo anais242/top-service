@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import OverlayProfil from './OverlayProfil';
 
 const LIENS = [
   { href: '/chauffeur/tableau-de-bord', label: 'Tableau de bord' },
@@ -10,7 +11,9 @@ const LIENS = [
 ];
 
 export default function NavbarChauffeur({ nom }: { nom?: string }) {
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert]     = useState(false);
+  const [profil, setProfil]     = useState(false);
+  const [nomLocal, setNomLocal] = useState(nom ?? '');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -22,7 +25,13 @@ export default function NavbarChauffeur({ nom }: { nom?: string }) {
 
   return (
     <>
-      {ouvert && (
+      {profil && (
+        <OverlayProfil
+          onClose={() => setProfil(false)}
+          onSave={(n) => { setNomLocal(n); setProfil(false); }}
+        />
+      )}
+      {ouvert && !profil && (
         <div
           onClick={() => setOuvert(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(28,25,23,0.45)', backdropFilter: 'blur(4px)', animation: 'fadeIn 0.2s ease' }}
@@ -65,10 +74,10 @@ export default function NavbarChauffeur({ nom }: { nom?: string }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
             }}>
-              {nom ? nom[0].toUpperCase() : 'C'}
+              {nomLocal ? nomLocal[0].toUpperCase() : 'C'}
             </div>
             <span className="navbar-nom" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>
-              {nom ?? 'Chauffeur'}
+              {nomLocal || 'Chauffeur'}
             </span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transition: 'transform 0.2s', transform: ouvert ? 'rotate(180deg)' : 'none' }}>
               <path d="M2 4l4 4 4-4" stroke="var(--gris)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -84,7 +93,7 @@ export default function NavbarChauffeur({ nom }: { nom?: string }) {
               animation: 'slideUp 0.2s ease', overflow: 'hidden',
             }}>
               <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(22,163,74,0.08), rgba(13,148,136,0.05))', borderBottom: '1px solid rgba(22,163,74,0.08)' }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nom ?? 'Chauffeur'}</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nomLocal || 'Chauffeur'}</p>
                 <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>Espace chauffeur</p>
               </div>
               <div style={{ padding: '8px' }}>
@@ -100,6 +109,13 @@ export default function NavbarChauffeur({ nom }: { nom?: string }) {
                 ))}
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--gris-light)' }}>
+                <button onClick={() => { setOuvert(false); setProfil(true); }} style={{
+                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#374151', fontWeight: 600, fontSize: '0.875rem', textAlign: 'left',
+                }}>
+                  Mon profil
+                </button>
                 <button onClick={deconnexion} style={{
                   width: '100%', padding: '10px 12px', borderRadius: '10px',
                   background: 'transparent', border: 'none', cursor: 'pointer',

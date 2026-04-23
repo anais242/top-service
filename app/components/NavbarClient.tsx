@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import OverlayProfil from './OverlayProfil';
 
 const LIENS = [
   { href: '/vehicules',           label: 'Nos véhicules' },
@@ -11,7 +12,9 @@ const LIENS = [
 ];
 
 export default function NavbarClient({ nom }: { nom?: string }) {
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert]     = useState(false);
+  const [profil, setProfil]     = useState(false);
+  const [nomLocal, setNomLocal] = useState(nom ?? '');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -23,8 +26,13 @@ export default function NavbarClient({ nom }: { nom?: string }) {
 
   return (
     <>
-      {/* Overlay sombre */}
-      {ouvert && (
+      {profil && (
+        <OverlayProfil
+          onClose={() => setProfil(false)}
+          onSave={(n) => { setNomLocal(n); setProfil(false); }}
+        />
+      )}
+      {ouvert && !profil && (
         <div
           onClick={() => setOuvert(false)}
           style={{
@@ -75,10 +83,10 @@ export default function NavbarClient({ nom }: { nom?: string }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
             }}>
-              {nom ? nom[0].toUpperCase() : 'C'}
+              {nomLocal ? nomLocal[0].toUpperCase() : 'C'}
             </div>
             <span className="navbar-nom" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>
-              {nom ?? 'Client'}
+              {nomLocal || 'Client'}
             </span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transition: 'transform 0.2s', transform: ouvert ? 'rotate(180deg)' : 'none' }}>
               <path d="M2 4l4 4 4-4" stroke="var(--gris)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -97,7 +105,7 @@ export default function NavbarClient({ nom }: { nom?: string }) {
             }}>
               {/* Header */}
               <div style={{ padding: '16px 18px', background: 'linear-gradient(135deg, rgba(249,115,22,0.07), rgba(22,163,74,0.05))', borderBottom: '1px solid rgba(249,115,22,0.08)' }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nom ?? 'Client'}</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nomLocal || 'Client'}</p>
                 <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>Espace client</p>
               </div>
 
@@ -116,8 +124,14 @@ export default function NavbarClient({ nom }: { nom?: string }) {
                 ))}
               </div>
 
-              {/* Déconnexion */}
               <div style={{ padding: '8px', borderTop: '1px solid var(--gris-light)' }}>
+                <button onClick={() => { setOuvert(false); setProfil(true); }} style={{
+                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#374151', fontWeight: 600, fontSize: '0.875rem', textAlign: 'left',
+                }}>
+                  Mon profil
+                </button>
                 <button onClick={deconnexion} style={{
                   width: '100%', padding: '10px 12px', borderRadius: '10px',
                   background: 'transparent', border: 'none', cursor: 'pointer',

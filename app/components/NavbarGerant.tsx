@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import OverlayProfil from './OverlayProfil';
 
 const LIENS = [
   { href: '/gerant/tableau-de-bord', label: 'Tableau de bord' },
@@ -13,7 +14,9 @@ const LIENS = [
 ];
 
 export default function NavbarGerant({ nom }: { nom?: string }) {
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert]   = useState(false);
+  const [profil, setProfil]   = useState(false);
+  const [nomLocal, setNomLocal] = useState(nom ?? '');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -25,7 +28,13 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
 
   return (
     <>
-      {ouvert && (
+      {profil && (
+        <OverlayProfil
+          onClose={() => setProfil(false)}
+          onSave={(n) => { setNomLocal(n); setProfil(false); }}
+        />
+      )}
+      {ouvert && !profil && (
         <div
           onClick={() => setOuvert(false)}
           style={{
@@ -60,10 +69,10 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
             }}>
-              {nom ? nom[0].toUpperCase() : 'G'}
+              {nomLocal ? nomLocal[0].toUpperCase() : 'G'}
             </div>
             <span className="navbar-nom" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>
-              {nom ?? 'Gérant'}
+              {nomLocal || 'Gérant'}
             </span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transition: 'transform 0.2s', transform: ouvert ? 'rotate(180deg)' : 'none' }}>
               <path d="M2 4l4 4 4-4" stroke="var(--gris)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -80,7 +89,7 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
               overflow: 'hidden',
             }}>
               <div style={{ padding: '16px 18px', background: 'linear-gradient(135deg, rgba(234,179,8,0.1), rgba(249,115,22,0.07))', borderBottom: '1px solid rgba(249,115,22,0.08)' }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nom ?? 'Gérant'}</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nomLocal || 'Gérant'}</p>
                 <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>Espace gerant</p>
               </div>
 
@@ -99,6 +108,13 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
               </div>
 
               <div style={{ padding: '8px', borderTop: '1px solid var(--gris-light)' }}>
+                <button onClick={() => { setOuvert(false); setProfil(true); }} style={{
+                  width: '100%', padding: '10px 12px', borderRadius: '10px',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#374151', fontWeight: 600, fontSize: '0.875rem', textAlign: 'left',
+                }}>
+                  Mon profil
+                </button>
                 <button onClick={deconnexion} style={{
                   width: '100%', padding: '10px 12px', borderRadius: '10px',
                   background: 'transparent', border: 'none', cursor: 'pointer',

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import OverlayProfil from './OverlayProfil';
 
 const LIENS = [
   { href: '/business/tableau-de-bord', label: 'Tableau de bord' },
@@ -11,7 +12,9 @@ const LIENS = [
 ];
 
 export default function NavbarBusiness({ nom }: { nom?: string }) {
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert]     = useState(false);
+  const [profil, setProfil]     = useState(false);
+  const [nomLocal, setNomLocal] = useState(nom ?? '');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -23,7 +26,13 @@ export default function NavbarBusiness({ nom }: { nom?: string }) {
 
   return (
     <>
-      {ouvert && (
+      {profil && (
+        <OverlayProfil
+          onClose={() => setProfil(false)}
+          onSave={(n) => { setNomLocal(n); setProfil(false); }}
+        />
+      )}
+      {ouvert && !profil && (
         <div onClick={() => setOuvert(false)} style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(28,25,23,0.45)', backdropFilter: 'blur(4px)', animation: 'fadeIn 0.2s ease' }} />
       )}
 
@@ -57,9 +66,9 @@ export default function NavbarBusiness({ nom }: { nom?: string }) {
             borderRadius: '50px', padding: '6px 16px 6px 6px', cursor: 'pointer', transition: 'all 0.2s',
           }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #1B3B8A, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
-              {nom ? nom[0].toUpperCase() : 'B'}
+              {nomLocal ? nomLocal[0].toUpperCase() : 'B'}
             </div>
-            <span className="navbar-nom" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>{nom ?? 'Corporate'}</span>
+            <span className="navbar-nom" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--brun)' }}>{nomLocal || 'Corporate'}</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transition: 'transform 0.2s', transform: ouvert ? 'rotate(180deg)' : 'none' }}>
               <path d="M2 4l4 4 4-4" stroke="var(--gris)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -68,7 +77,7 @@ export default function NavbarBusiness({ nom }: { nom?: string }) {
           {ouvert && (
             <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 10px)', zIndex: 200, background: 'white', borderRadius: '16px', width: '230px', boxShadow: '0 8px 40px rgba(28,25,23,0.15)', border: '1px solid rgba(27,59,138,0.12)', animation: 'slideUp 0.2s ease', overflow: 'hidden' }}>
               <div style={{ padding: '16px 18px', background: 'linear-gradient(135deg, rgba(27,59,138,0.07), rgba(37,99,235,0.04))', borderBottom: '1px solid rgba(27,59,138,0.08)' }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nom ?? 'Corporate'}</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--brun)' }}>{nomLocal || 'Corporate'}</p>
                 <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--gris)' }}>Espace client corporate</p>
               </div>
               <div style={{ padding: '8px' }}>
@@ -84,6 +93,9 @@ export default function NavbarBusiness({ nom }: { nom?: string }) {
                 ))}
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--gris-light)' }}>
+                <button onClick={() => { setOuvert(false); setProfil(true); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#374151', fontWeight: 600, fontSize: '0.875rem', textAlign: 'left' }}>
+                  Mon profil
+                </button>
                 <button onClick={deconnexion} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#DC2626', fontWeight: 600, fontSize: '0.875rem', textAlign: 'left' }}>
                   Se déconnecter
                 </button>

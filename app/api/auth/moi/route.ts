@@ -12,11 +12,11 @@ export async function GET(req: NextRequest) {
   if (!payload) return NextResponse.json({ success: false }, { status: 401 });
 
   await connectDB();
-  const user = await User.findById(payload.userId).select('nom role permisRecto permisVerso').lean();
+  const user = await User.findById(payload.userId).select('nom email telephone role permisRecto permisVerso').lean();
   if (!user) return NextResponse.json({ success: false }, { status: 401 });
 
   return NextResponse.json({
     success: true,
-    data: { nom: user.nom, role: user.role, permisRecto: user.permisRecto ?? null, permisVerso: user.permisVerso ?? null },
+    data: { nom: user.nom, email: user.email, telephone: user.telephone, role: user.role, permisRecto: user.permisRecto ?? null, permisVerso: user.permisVerso ?? null },
   });
 }

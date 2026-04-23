@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { verifierAccessToken } from '@/lib/auth/jwt';
 import { COOKIE_ACCESS } from '@/lib/auth/cookies';
 import NavbarGerant from '@/app/components/NavbarGerant';
+import SidebarGerant from '@/app/components/SidebarGerant';
 
 export default async function LayoutGerant({ children }: { children: React.ReactNode }) {
   const cookieStore = cookies();
@@ -16,7 +17,12 @@ export default async function LayoutGerant({ children }: { children: React.React
   return (
     <>
       <NavbarGerant nom={payload.nom} />
-      {children}
+      <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: 'calc(100vh - 60px)' }}>
+        <SidebarGerant />
+        <main style={{ flex: 1, minWidth: 0, padding: '0' }}>
+          {children}
+        </main>
+      </div>
     </>
   );
 }

@@ -43,19 +43,6 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
           Top Service
         </Link>
 
-        <div className="navbar-links" style={{ display: 'flex', gap: '4px' }}>
-          {LIENS.map(({ href, label }) => (
-            <Link key={href} href={href} style={{
-              padding: '7px 14px', borderRadius: '8px', fontWeight: 500, fontSize: '0.875rem',
-              color: pathname.startsWith(href) ? 'var(--orange)' : 'var(--gris)',
-              background: pathname.startsWith(href) ? 'rgba(249,115,22,0.08)' : 'transparent',
-              textDecoration: 'none', transition: 'all 0.2s',
-            }}>
-              {label}
-            </Link>
-          ))}
-        </div>
-
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setOuvert((o) => !o)}

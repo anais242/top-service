@@ -34,10 +34,11 @@ export async function GET(req: NextRequest) {
   for (const r of reservationsActives) {
     const cid = r.chauffeur?.toString();
     if (cid && r.vehicule && typeof r.vehicule === 'object' && 'marque' in r.vehicule) {
+      const v = r.vehicule as unknown as { marque: string; modele: string; annee: number };
       vehiculeParChauffeur[cid] = {
-        marque: (r.vehicule as { marque: string }).marque,
-        modele: (r.vehicule as { modele: string }).modele,
-        annee:  (r.vehicule as { annee: number }).annee,
+        marque: v.marque,
+        modele: v.modele,
+        annee:  v.annee,
         dateDebut: r.dateDebut,
         dateFin:   r.dateFin,
       };

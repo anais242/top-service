@@ -20,7 +20,7 @@ function FormulaireConnexion() {
       const res = await fetch('/api/auth/connexion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.get('email'), motDePasse: form.get('motDePasse') }),
+        body: JSON.stringify({ identifiant: form.get('identifiant'), motDePasse: form.get('motDePasse') }),
       });
       const json = await res.json();
       if (!res.ok) { setErreur(json.message || 'Erreur de connexion'); return; }
@@ -62,8 +62,8 @@ function FormulaireConnexion() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
-            <label>Adresse email</label>
-            <input name="email" type="email" autoComplete="email" required placeholder="vous@exemple.com" />
+            <label>Email ou téléphone</label>
+            <input name="identifiant" type="text" autoComplete="username" required placeholder="vous@exemple.com ou 06XXXXXXXX" />
           </div>
           <div className="form-group">
             <label>Mot de passe</label>

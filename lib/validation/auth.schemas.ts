@@ -31,12 +31,8 @@ export const schemaInscription = z.object({
 
 // ─── Connexion ────────────────────────────────────────────────────────────────
 export const schemaConnexion = z.object({
-  email: z
-    .string()
-    .email("Format d'email invalide")
-    .transform((v) => v.toLowerCase()),
-
-  motDePasse: z.string().min(1, 'Le mot de passe est requis').max(128),
+  identifiant: z.string().min(1, "L'identifiant est requis").max(255),
+  motDePasse:  z.string().min(1, 'Le mot de passe est requis').max(128),
 });
 
 export type DonneesInscription = z.infer<typeof schemaInscription>;

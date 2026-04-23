@@ -41,21 +41,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, motDePasse } = validation.data;
+    const { identifiant, motDePasse } = validation.data;
 
-    // 4. Rate limiting supplémentaire par email
-    const limiteEmail = await verifierRateLimit(`connexion:email:${email}`);
-    if (!limiteEmail.autorise) {
+    // 4. Rate limiting supplémentaire par identifiant
+    const limiteIdentifiant = await verifierRateLimit(`connexion:id:${identifiant}`);
+    if (!limiteIdentifiant.autorise) {
       return NextResponse.json<ApiResponse>(
-        { success: false, message: `Trop de tentatives sur ce compte. Réessayez dans ${limiteEmail.resetDans}s.` },
+        { success: false, message: `Trop de tentatives sur ce compte. Réessayez dans ${limiteIdentifiant.resetDans}s.` },
         { status: 429 }
       );
     }
 
-    // 5. Recherche de l'utilisateur
+    // 5. Recherche par email ou téléphone
     await connectDB();
-    // On sélectionne explicitement motDePasse (exclu par défaut dans toJSON)
-    const utilisateur = await User.findOne({ email }).select('+motDePasse');
+    const estEmail = identifiant.includes('@');
+    const filtre = estEmail
+      ? { email: identifiant.toLowerCase() }
+      : { telephone: identifiant };
+    const utilisateur = await User.findOne(filtre).select('+motDePasse');
 
     // 6. Vérification — même message si compte inexistant ou mot de passe erroné
     //    (évite l'énumération de comptes)

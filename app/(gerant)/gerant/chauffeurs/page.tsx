@@ -11,6 +11,8 @@ interface Chauffeur {
   telephone: string;
   actif: boolean;
   estOccupe: boolean;
+  aReservationAVenir: boolean;
+  prochaineReservation?: string | null;
   createdAt: string;
   vehiculeActuel?: VehiculeActuel | null;
 }
@@ -145,11 +147,13 @@ export default function PageChauffeurs() {
         {chauffeurs.map((c) => {
           const ouvert = detailOuvert === c._id;
           const enAction = actionEnCours === c._id;
-          const badgeConfig = c.estOccupe
+          const badgeConfig = !c.actif
+            ? { label: 'Bloqué', bg: '#fee2e2', color: '#991b1b' }
+            : c.estOccupe
             ? { label: 'En mission', bg: '#fef9c3', color: '#713f12' }
-            : c.actif
-            ? { label: 'Disponible', bg: '#dcfce7', color: '#166534' }
-            : { label: 'Bloqué', bg: '#fee2e2', color: '#991b1b' };
+            : c.aReservationAVenir
+            ? { label: 'Disponible · Réservé', bg: '#dbeafe', color: '#1e40af' }
+            : { label: 'Disponible', bg: '#dcfce7', color: '#166534' };
 
           return (
             <div key={c._id} className="card" style={{ padding: '0', overflow: 'hidden' }}>
@@ -174,6 +178,11 @@ export default function PageChauffeurs() {
                   <span style={{ background: badgeConfig.bg, color: badgeConfig.color, padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
                     {badgeConfig.label}
                   </span>
+                  {c.aReservationAVenir && c.prochaineReservation && (
+                    <span style={{ fontSize: '0.7rem', color: '#1e40af' }}>
+                      Prochaine : {fmt(c.prochaineReservation)}
+                    </span>
+                  )}
                   <span style={{ fontSize: '0.7rem', color: 'var(--gris)' }}>{ouvert ? '▲' : '▼'}</span>
                 </div>
               </div>

@@ -18,10 +18,11 @@ export async function GET(req: NextRequest) {
   await connectDB();
   const chauffeurs = await User.find({ role: 'chauffeur' }).select('-motDePasse').sort({ createdAt: -1 }).lean();
 
-  // Détecter les chauffeurs EN MISSION MAINTENANT (dateDebut <= now <= dateFin)
   const now = new Date();
   const ids = chauffeurs.map((c) => c._id);
-  const reservationsActives = await Reservation.find({
+
+  // Réservations EN COURS maintenant
+  const resasEnCours = await Reservation.find({
     chauffeur: { $in: ids },
     statut: 'confirmee',
     statutChauffeur: { $in: ['en_attente', 'acceptee'] },
@@ -29,27 +30,45 @@ export async function GET(req: NextRequest) {
     dateFin:   { $gte: now },
   }).populate('vehicule', 'marque modele annee').select('chauffeur vehicule dateDebut dateFin').lean();
 
-  const occupes = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
+  // Réservations FUTURES (pas encore commencées)
+  const resasFutures = await Reservation.find({
+    chauffeur: { $in: ids },
+    statut: 'confirmee',
+    statutChauffeur: { $in: ['en_attente', 'acceptee'] },
+    dateDebut: { $gt: now },
+  }).select('chauffeur dateDebut dateFin').lean();
+
+  const enMission   = new Set(resasEnCours.map((r) => r.chauffeur?.toString()));
+  const aVenir      = new Set(resasFutures.map((r) => r.chauffeur?.toString()));
+
   const vehiculeParChauffeur: Record<string, { marque: string; modele: string; annee: number; dateDebut: Date; dateFin: Date }> = {};
-  for (const r of reservationsActives) {
+  for (const r of resasEnCours) {
     const cid = r.chauffeur?.toString();
     if (cid && r.vehicule && typeof r.vehicule === 'object' && 'marque' in r.vehicule) {
       const v = r.vehicule as unknown as { marque: string; modele: string; annee: number };
-      vehiculeParChauffeur[cid] = {
-        marque: v.marque,
-        modele: v.modele,
-        annee:  v.annee,
-        dateDebut: r.dateDebut,
-        dateFin:   r.dateFin,
-      };
+      vehiculeParChauffeur[cid] = { marque: v.marque, modele: v.modele, annee: v.annee, dateDebut: r.dateDebut, dateFin: r.dateFin };
     }
   }
 
-  const data = chauffeurs.map((c) => ({
-    ...c,
-    estOccupe: occupes.has(c._id.toString()),
-    vehiculeActuel: vehiculeParChauffeur[c._id.toString()] ?? null,
-  }));
+  // Prochaine réservation par chauffeur
+  const prochaineParChauffeur: Record<string, Date> = {};
+  for (const r of resasFutures) {
+    const cid = r.chauffeur?.toString();
+    if (cid && (!prochaineParChauffeur[cid] || r.dateDebut < prochaineParChauffeur[cid])) {
+      prochaineParChauffeur[cid] = r.dateDebut;
+    }
+  }
+
+  const data = chauffeurs.map((c) => {
+    const cid = c._id.toString();
+    return {
+      ...c,
+      estOccupe:       enMission.has(cid),
+      aReservationAVenir: aVenir.has(cid) && !enMission.has(cid),
+      prochaineReservation: prochaineParChauffeur[cid] ?? null,
+      vehiculeActuel:  vehiculeParChauffeur[cid] ?? null,
+    };
+  });
   return NextResponse.json<ApiResponse>({ success: true, data });
 }
 

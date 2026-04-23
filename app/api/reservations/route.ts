@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     const reservations = await Reservation.find(filtre)
       .populate('vehicule', 'marque modele annee photos prixParJour')
-      .populate('client', 'nom email telephone')
+      .populate('client', 'nom email telephone permisRecto permisVerso')
       .populate('chauffeur', 'nom email')
       .sort({ createdAt: -1 })
       .lean();

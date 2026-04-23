@@ -9,6 +9,8 @@ export interface IUser extends Document {
   motDePasse: string;
   role: UserRole;
   actif: boolean;
+  permisRecto?: string;
+  permisVerso?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +53,8 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
+    permisRecto: { type: String, default: null },
+    permisVerso: { type: String, default: null },
   },
   {
     timestamps: true,

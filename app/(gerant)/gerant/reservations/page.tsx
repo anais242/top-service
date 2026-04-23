@@ -9,7 +9,7 @@ interface VehiculeOption { _id: string; marque: string; modele: string; annee: n
 interface Reservation {
   _id: string;
   vehicule: { _id?: string; marque: string; modele: string; annee: number; photos: string[] };
-  client: { nom: string; email: string; telephone: string };
+  client: { nom: string; email: string; telephone: string; permisRecto?: string; permisVerso?: string };
   dateDebut: string; dateFin: string; nombreJours: number;
   prixTotal: number; statut: string; messageClient: string; createdAt: string;
   avecChauffeur?: boolean;
@@ -246,6 +246,27 @@ export default function PageReservationsGerant() {
                     <p style={{ margin: '8px 0 0', padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '0.875rem', color: '#374151' }}>
                       Message client : {r.messageClient}
                     </p>
+                  )}
+                  {/* Permis de conduire — visible uniquement par le gérant */}
+                  {!r.avecChauffeur && (r.client?.permisRecto || r.client?.permisVerso) && (
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {r.client.permisRecto && (
+                        <a href={r.client.permisRecto} target="_blank" rel="noreferrer" style={{ display: 'block' }}>
+                          <img src={r.client.permisRecto} alt="Permis recto" style={{ height: '52px', width: '80px', objectFit: 'cover', borderRadius: '6px', border: '1.5px solid #e5e7eb', cursor: 'zoom-in' }} title="Permis — Recto" />
+                        </a>
+                      )}
+                      {r.client.permisVerso && (
+                        <a href={r.client.permisVerso} target="_blank" rel="noreferrer" style={{ display: 'block' }}>
+                          <img src={r.client.permisVerso} alt="Permis verso" style={{ height: '52px', width: '80px', objectFit: 'cover', borderRadius: '6px', border: '1.5px solid #e5e7eb', cursor: 'zoom-in' }} title="Permis — Verso" />
+                        </a>
+                      )}
+                      {!r.client.permisRecto && !r.client.permisVerso && (
+                        <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>⚠ Permis non fourni</span>
+                      )}
+                    </div>
+                  )}
+                  {!r.avecChauffeur && !r.client?.permisRecto && !r.client?.permisVerso && (
+                    <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>⚠ Permis de conduire non fourni</p>
                   )}
                   {r.avecChauffeur && (
                     <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

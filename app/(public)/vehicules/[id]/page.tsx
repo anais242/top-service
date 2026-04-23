@@ -37,17 +37,49 @@ export default function PageDetailPublic() {
   const [erreurForm, setErreurForm] = useState('');
   const [soumission, setSoumission] = useState(false);
 
+  // Permis de conduire
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [permisRecto, setPermisRecto] = useState<string | null>(null);
+  const [permisVerso, setPermisVerso] = useState<string | null>(null);
+  const [uploadPermisEnCours, setUploadPermisEnCours] = useState<'recto' | 'verso' | null>(null);
+
   const aujourd_hui = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/vehicules/${id}`).then((r) => r.json()),
       fetch(`/api/vehicules/${id}/disponibilite`).then((r) => r.json()),
-    ]).then(([vj, dj]) => {
+      fetch('/api/auth/moi').then((r) => r.json()),
+    ]).then(([vj, dj, mj]) => {
       if (vj.success) setVehicule(vj.data);
       if (dj.success) setPlages(dj.data);
+      if (mj.success) {
+        setUserRole(mj.data.role);
+        setPermisRecto(mj.data.permisRecto ?? null);
+        setPermisVerso(mj.data.permisVerso ?? null);
+      }
     }).finally(() => setChargement(false));
   }, [id]);
+
+  async function handleUploadPermis(e: React.ChangeEvent<HTMLInputElement>, side: 'recto' | 'verso') {
+    const fichier = e.target.files?.[0];
+    if (!fichier) return;
+    setUploadPermisEnCours(side);
+    const form = new FormData();
+    form.append('photo', fichier);
+    form.append('side', side);
+    try {
+      const res = await fetch('/api/upload/permis', { method: 'POST', body: form });
+      const json = await res.json();
+      if (json.success) {
+        setPermisRecto(json.data.permisRecto);
+        setPermisVerso(json.data.permisVerso);
+      } else {
+        alert(json.message);
+      }
+    } catch { alert('Erreur upload'); }
+    finally { setUploadPermisEnCours(null); e.target.value = ''; }
+  }
 
   function estDateOccupee(date: string): boolean {
     const d = new Date(date);
@@ -326,6 +358,41 @@ export default function PageDetailPublic() {
           </div>
         )}
 
+        {/* Permis de conduire — obligatoire si sans chauffeur et rôle client */}
+        {userRole === 'client' && !avecChauffeur && (
+          <div style={{ marginBottom: '16px', padding: '14px 16px', background: (!permisRecto || !permisVerso) ? '#fef9c3' : '#f0fdf4', border: `1.5px solid ${(!permisRecto || !permisVerso) ? '#fde68a' : '#86efac'}`, borderRadius: '10px' }}>
+            <p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: '0.875rem', color: (!permisRecto || !permisVerso) ? '#92400e' : '#166534' }}>
+              {(!permisRecto || !permisVerso) ? '⚠ Permis de conduire requis pour réserver sans chauffeur' : '✓ Permis de conduire enregistré'}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {(['recto', 'verso'] as const).map((side) => {
+                const url = side === 'recto' ? permisRecto : permisVerso;
+                const enCours = uploadPermisEnCours === side;
+                return (
+                  <div key={side}>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>{side}</p>
+                    {url ? (
+                      <div style={{ position: 'relative' }}>
+                        <img src={url} alt={`Permis ${side}`} style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #86efac' }} />
+                        <label style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600 }}>
+                          Changer
+                          <input type="file" accept="image/*" onChange={(e) => handleUploadPermis(e, side)} style={{ display: 'none' }} disabled={!!uploadPermisEnCours} />
+                        </label>
+                      </div>
+                    ) : (
+                      <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #fde68a', borderRadius: '8px', cursor: enCours ? 'wait' : 'pointer', background: '#fffbeb', gap: '4px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>{enCours ? '⏳' : '📷'}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#92400e', fontWeight: 600 }}>{enCours ? 'Upload...' : `Ajouter ${side}`}</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleUploadPermis(e, side)} style={{ display: 'none' }} disabled={!!uploadPermisEnCours} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Message + bouton */}
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div className="form-group" style={{ flex: 1, minWidth: '200px', marginBottom: 0 }}>
@@ -350,7 +417,7 @@ export default function PageDetailPublic() {
               </span>
             </label>
             <button className="btn" onClick={handleReserver}
-              disabled={soumission || !dateDebut || (typeLocation === 'jour' && !dateFin) || !cguAcceptees}
+              disabled={soumission || !dateDebut || (typeLocation === 'jour' && !dateFin) || !cguAcceptees || (userRole === 'client' && !avecChauffeur && (!permisRecto || !permisVerso))}
               style={{ width: '100%' }}>
               {soumission ? 'Traitement...' : 'Réserver ce véhicule'}
             </button>

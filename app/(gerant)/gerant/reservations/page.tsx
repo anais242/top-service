@@ -220,33 +220,47 @@ export default function PageReservationsGerant() {
 
               {r.statut === 'en_attente' && (() => {
                 const occupes = vehiculesOccupesPour(r);
+                const vehiculeActuelOccupe = occupes.has(r.vehicule?._id ?? '');
+                const aucunRemplacant = vehiculeActuelOccupe && !vehiculeSelectionne[r._id];
                 return (
                 <div style={{ marginTop: '16px', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
+
+                  {/* Alerte conflit véhicule */}
+                  {vehiculeActuelOccupe && (
+                    <div style={{ marginBottom: '12px', padding: '12px 14px', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px' }}>
+                      <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#dc2626', fontSize: '0.875rem' }}>
+                        ⚠ Ce véhicule est déjà confirmé sur ces dates
+                      </p>
+                      <p style={{ margin: '0 0 10px', color: '#7f1d1d', fontSize: '0.8rem' }}>
+                        Vous devez assigner un autre véhicule disponible avant de confirmer.
+                      </p>
+                      <Link href="/gerant/vehicules" style={{ display: 'inline-block', padding: '6px 14px', background: '#1B3B8A', color: 'white', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
+                        Voir le parc auto →
+                      </Link>
+                    </div>
+                  )}
+
                   {/* Sélection véhicule */}
                   {vehicules.length > 0 && (
                     <div style={{ marginBottom: '10px' }}>
                       <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>
-                        Véhicule : <span style={{ color: '#1B3B8A' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}</span>
+                        Véhicule demandé : <span style={{ color: vehiculeActuelOccupe ? '#dc2626' : '#1B3B8A' }}>{r.vehicule?.marque} {r.vehicule?.modele} {r.vehicule?.annee}{vehiculeActuelOccupe ? ' (occupé)' : ''}</span>
                       </p>
                       <select
                         value={vehiculeSelectionne[r._id] || ''}
                         onChange={(e) => { setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value })); setErreurVehicule((e) => ({ ...e, [r._id]: '' })); }}
-                        style={{ width: '100%', padding: '8px 12px', border: `1.5px solid ${erreurVehicule[r._id] ? '#dc2626' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                        style={{ width: '100%', padding: '8px 12px', border: `1.5px solid ${vehiculeActuelOccupe && !vehiculeSelectionne[r._id] ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
                       >
-                        <option value="" disabled={occupes.has(r.vehicule?._id ?? '')}>
-                          {occupes.has(r.vehicule?._id ?? '') ? '⚠ Véhicule actuel occupé — choisissez-en un autre' : '— Garder le véhicule actuel —'}
-                        </option>
+                        <option value="">{vehiculeActuelOccupe ? '— Choisir un véhicule disponible —' : '— Garder le véhicule actuel —'}</option>
                         {vehicules.map((v) => (
                           <option key={v._id} value={v._id} disabled={occupes.has(v._id)}>
                             {v.marque} {v.modele} {v.annee}{occupes.has(v._id) ? ' (occupé sur ces dates)' : ''}
                           </option>
                         ))}
                       </select>
-                      {erreurVehicule[r._id] && (
-                        <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626' }}>⚠ {erreurVehicule[r._id]}</p>
-                      )}
                     </div>
                   )}
+
                   {/* Sélection chauffeur */}
                   {r.avecChauffeur && chauffeurs.length > 0 && (
                     <div style={{ marginBottom: '10px' }}>
@@ -265,6 +279,7 @@ export default function PageReservationsGerant() {
                       </select>
                     </div>
                   )}
+
                   {/* Message */}
                   <div className="form-group" style={{ marginBottom: '12px' }}>
                     <label style={{ fontSize: '0.875rem' }}>Message au client (optionnel)</label>
@@ -275,7 +290,10 @@ export default function PageReservationsGerant() {
                     />
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => changerStatut(r._id, 'confirmee', { chauffeurId: chauffeurSelectionne[r._id], vehiculeId: vehiculeSelectionne[r._id] })} style={{ flex: 1, padding: '10px', background: '#dcfce7', color: '#166534', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                    <button
+                      onClick={() => changerStatut(r._id, 'confirmee', { chauffeurId: chauffeurSelectionne[r._id], vehiculeId: vehiculeSelectionne[r._id] })}
+                      disabled={aucunRemplacant}
+                      style={{ flex: 1, padding: '10px', background: aucunRemplacant ? '#e5e7eb' : '#dcfce7', color: aucunRemplacant ? '#9ca3af' : '#166534', border: 'none', borderRadius: '8px', cursor: aucunRemplacant ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                       ✓ Confirmer
                     </button>
                     <button onClick={() => changerStatut(r._id, 'refusee')} style={{ flex: 1, padding: '10px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>

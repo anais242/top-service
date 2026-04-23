@@ -369,7 +369,17 @@ export default function PageReservationsGerant() {
                   </div>
 
                   {/* Bloc chauffeur */}
-                  {r.avecChauffeur && chauffeurs.length > 0 && (
+                  {r.avecChauffeur && (() => {
+                    const tousOccupes = chauffeurs.length > 0 && chauffeurs.every((c) => c.estOccupe);
+                    const aucunChauffeur = chauffeurs.length === 0;
+                    return (
+                      <>
+                        {(tousOccupes || aucunChauffeur) && (
+                          <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px', fontSize: '0.82rem', color: '#dc2626', fontWeight: 600 }}>
+                            ⚠ {aucunChauffeur ? 'Aucun chauffeur enregistré.' : 'Tous les chauffeurs sont occupés sur cette période.'} La réservation peut être confirmée — le chauffeur sera à assigner manuellement.
+                          </div>
+                        )}
+                        {chauffeurs.length > 0 && (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <select
                         value={chauffeurSelectionne[r._id] || ''}
@@ -390,7 +400,10 @@ export default function PageReservationsGerant() {
                         Assigner
                       </button>
                     </div>
-                  )}
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Message */}
                   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -451,6 +464,12 @@ export default function PageReservationsGerant() {
                       {erreurVehicule[r._id] && (
                         <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626' }}>⚠ {erreurVehicule[r._id]}</p>
                       )}
+                    </div>
+                  )}
+                  {/* Alerte chauffeur non assigné */}
+                  {r.avecChauffeur && r.statutChauffeur === 'non_attribue' && (
+                    <div style={{ marginBottom: '10px', padding: '10px 12px', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px', fontSize: '0.82rem', color: '#dc2626', fontWeight: 600 }}>
+                      ⚠ Aucun chauffeur assigné à cette réservation — à régler avant la date de début.
                     </div>
                   )}
                   {/* Assignation chauffeur */}

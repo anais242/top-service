@@ -36,16 +36,26 @@ export default function PageReservationsGerant() {
   const [vehiculeSelectionne, setVehiculeSelectionne] = useState<Record<string, string>>({});
   const [erreurVehicule, setErreurVehicule] = useState<Record<string, string>>({});
 
+  async function chargerVehicules() {
+    const vj = await fetch('/api/vehicules?limite=100').then((r) => r.json());
+    if (vj.success) setVehicules(vj.data.vehicules ?? vj.data);
+  }
+
   useEffect(() => {
     Promise.all([
       fetch('/api/reservations').then((r) => r.json()),
       fetch('/api/gerant/chauffeurs').then((r) => r.json()),
-      fetch('/api/vehicules').then((r) => r.json()),
+      fetch('/api/vehicules?limite=100').then((r) => r.json()),
     ]).then(([rj, cj, vj]) => {
       if (rj.success) setReservations(rj.data);
       if (cj.success) setChauffeurs(cj.data);
-      if (vj.success) setVehicules(vj.data);
+      if (vj.success) setVehicules(vj.data.vehicules ?? vj.data);
     }).finally(() => setChargement(false));
+
+    // Rafraîchit les véhicules quand l'admin revient sur l'onglet (ex: après avoir créé un véhicule)
+    const onFocus = () => chargerVehicules();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   // Retourne l'ensemble des IDs véhicules déjà confirmés qui chevauchent la période d'une réservation
@@ -234,8 +244,8 @@ export default function PageReservationsGerant() {
                       <p style={{ margin: '0 0 10px', color: '#7f1d1d', fontSize: '0.8rem' }}>
                         Vous devez assigner un autre véhicule disponible avant de confirmer.
                       </p>
-                      <Link href="/gerant/vehicules" style={{ display: 'inline-block', padding: '6px 14px', background: '#1B3B8A', color: 'white', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
-                        Voir le parc auto →
+                      <Link href="/gerant/vehicules?retour=reservations" style={{ display: 'inline-block', padding: '6px 14px', background: '#1B3B8A', color: 'white', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
+                        Créer / voir le parc auto →
                       </Link>
                     </div>
                   )}

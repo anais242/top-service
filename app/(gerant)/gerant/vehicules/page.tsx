@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Vehicule {
   _id: string;
@@ -31,8 +31,10 @@ const STATUT_TECH = {
 
 const fmt = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
-export default function PageVehiculesGerant() {
+function PageVehiculesGerantInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const depuisResas = searchParams.get('retour') === 'reservations';
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [resas, setResas] = useState<ResaActive[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -82,6 +84,16 @@ export default function PageVehiculesGerant() {
 
   return (
     <div className="container">
+      {depuisResas && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <span style={{ fontSize: '0.875rem', color: '#1e40af', fontWeight: 600 }}>
+            Vous avez créé de nouveaux véhicules ? Retournez assigner dans les réservations.
+          </span>
+          <Link href="/gerant/reservations" style={{ padding: '8px 16px', background: '#1B3B8A', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+            ← Réservations en attente
+          </Link>
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ margin: 0 }}>Parc automobile</h1>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -264,5 +276,13 @@ export default function PageVehiculesGerant() {
         );
       })()}
     </div>
+  );
+}
+
+export default function PageVehiculesGerant() {
+  return (
+    <Suspense>
+      <PageVehiculesGerantInner />
+    </Suspense>
   );
 }

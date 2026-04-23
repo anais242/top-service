@@ -17,12 +17,10 @@ export default async function LayoutGerant({ children }: { children: React.React
   return (
     <>
       <NavbarGerant nom={payload.nom} />
-      <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: 'calc(100vh - 60px)' }}>
-        <SidebarGerant />
-        <main style={{ flex: 1, minWidth: 0, padding: '0' }}>
-          {children}
-        </main>
-      </div>
+      <SidebarGerant />
+      <main style={{ minHeight: 'calc(100vh - 108px)' }}>
+        {children}
+      </main>
     </>
   );
 }

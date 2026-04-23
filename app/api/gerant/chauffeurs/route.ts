@@ -18,16 +18,34 @@ export async function GET(req: NextRequest) {
   await connectDB();
   const chauffeurs = await User.find({ role: 'chauffeur' }).select('-motDePasse').sort({ createdAt: -1 }).lean();
 
-  // Détecter les chauffeurs déjà sur une réservation confirmée active
+  // Détecter les chauffeurs sur une réservation confirmée active + récupérer leur véhicule
   const ids = chauffeurs.map((c) => c._id);
   const reservationsActives = await Reservation.find({
     chauffeur: { $in: ids },
     statut: 'confirmee',
     statutChauffeur: { $in: ['en_attente', 'acceptee'] },
-  }).select('chauffeur').lean();
-  const occupes = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
+  }).populate('vehicule', 'marque modele annee').select('chauffeur vehicule dateDebut dateFin').lean();
 
-  const data = chauffeurs.map((c) => ({ ...c, estOccupe: occupes.has(c._id.toString()) }));
+  const occupes = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
+  const vehiculeParChauffeur: Record<string, { marque: string; modele: string; annee: number; dateDebut: Date; dateFin: Date }> = {};
+  for (const r of reservationsActives) {
+    const cid = r.chauffeur?.toString();
+    if (cid && r.vehicule && typeof r.vehicule === 'object' && 'marque' in r.vehicule) {
+      vehiculeParChauffeur[cid] = {
+        marque: (r.vehicule as { marque: string }).marque,
+        modele: (r.vehicule as { modele: string }).modele,
+        annee:  (r.vehicule as { annee: number }).annee,
+        dateDebut: r.dateDebut,
+        dateFin:   r.dateFin,
+      };
+    }
+  }
+
+  const data = chauffeurs.map((c) => ({
+    ...c,
+    estOccupe: occupes.has(c._id.toString()),
+    vehiculeActuel: vehiculeParChauffeur[c._id.toString()] ?? null,
+  }));
   return NextResponse.json<ApiResponse>({ success: true, data });
 }
 

@@ -1,21 +1,32 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import HeroSlider from './components/HeroSlider';
+import NavbarPublique from './components/NavbarPublique';
 
 export default function Accueil() {
+  const [connecte, setConnecte] = useState(false);
+  const [lienEspace, setLienEspace] = useState('/client/tableau-de-bord');
+
+  useEffect(() => {
+    fetch('/api/auth/moi').then((r) => r.json()).then((j) => {
+      if (j.success) {
+        setConnecte(true);
+        const role = j.data.role;
+        setLienEspace(
+          role === 'gerant'   ? '/gerant/tableau-de-bord' :
+          role === 'chauffeur'? '/chauffeur/tableau-de-bord' :
+          role === 'business' ? '/business/tableau-de-bord' :
+          '/client/tableau-de-bord'
+        );
+      }
+    });
+  }, []);
+
   return (
     <>
-      {/* Navbar */}
-      <nav className="navbar">
-        <span className="navbar-brand">Top Service</span>
-        <div className="landing-nav-actions" style={{ display: 'flex', gap: '12px' }}>
-          <Link href="/connexion" className="btn-ghost btn" style={{ padding: '8px 20px', fontSize: '0.875rem' }}>
-            Connexion
-          </Link>
-          <Link href="/inscription" className="btn" style={{ padding: '8px 20px', fontSize: '0.875rem' }}>
-            Créer un compte
-          </Link>
-        </div>
-      </nav>
+      <NavbarPublique />
 
       {/* Hero Slider */}
       <HeroSlider />
@@ -178,14 +189,25 @@ export default function Accueil() {
             }}>
               Voir les véhicules
             </Link>
-            <Link href="/inscription" style={{
-              padding: '14px 32px', fontWeight: 700, borderRadius: '10px',
-              border: '2px solid rgba(219,234,254,0.5)', color: '#DBEAFE',
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-              background: 'rgba(255,255,255,0.1)',
-            }}>
-              S'inscrire gratuitement
-            </Link>
+            {connecte ? (
+              <Link href={lienEspace} style={{
+                padding: '14px 32px', fontWeight: 700, borderRadius: '10px',
+                border: '2px solid rgba(219,234,254,0.5)', color: '#DBEAFE',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+                background: 'rgba(255,255,255,0.1)',
+              }}>
+                Mon espace
+              </Link>
+            ) : (
+              <Link href="/inscription" style={{
+                padding: '14px 32px', fontWeight: 700, borderRadius: '10px',
+                border: '2px solid rgba(219,234,254,0.5)', color: '#DBEAFE',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+                background: 'rgba(255,255,255,0.1)',
+              }}>
+                S'inscrire gratuitement
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -203,7 +225,10 @@ export default function Accueil() {
         <span>Location de véhicules · Congo · Aéroport Agostinho-Neto</span>
         <div style={{ display: 'flex', gap: '20px' }}>
           <Link href="/vehicules" style={{ color: 'var(--gris)', textDecoration: 'none' }}>Catalogue</Link>
-          <Link href="/connexion" style={{ color: 'var(--gris)', textDecoration: 'none' }}>Connexion</Link>
+          {connecte
+            ? <Link href={lienEspace} style={{ color: 'var(--gris)', textDecoration: 'none' }}>Mon espace</Link>
+            : <Link href="/connexion" style={{ color: 'var(--gris)', textDecoration: 'none' }}>Connexion</Link>
+          }
         </div>
       </footer>
     </>

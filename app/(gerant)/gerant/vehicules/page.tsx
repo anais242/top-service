@@ -6,24 +6,24 @@ import { useRouter } from 'next/navigation';
 
 interface Vehicule {
   _id: string;
-  marque: string;
-  modele: string;
-  annee: number;
-  prixParJour: number;
+  marque: string; modele: string; annee: number; couleur: string; ville: string;
+  prixParJour: number; prixParHeure?: number;
+  kilometrage: number; carburant: string; transmission: string; nombrePlaces: number;
+  description?: string;
   statut: 'disponible' | 'loue' | 'maintenance';
   photos: string[];
+  chauffeurDisponible?: boolean;
 }
 
 interface ResaActive {
   _id: string;
   vehicule: { _id: string };
   client: { nom: string };
-  dateDebut: string;
-  dateFin: string;
+  dateDebut: string; dateFin: string;
   statut: 'en_attente' | 'confirmee';
 }
 
-const COULEUR_STATUT = {
+const STATUT_TECH = {
   disponible:  { bg: '#dcfce7', color: '#166534', label: 'Disponible' },
   loue:        { bg: '#fef9c3', color: '#713f12', label: 'Loué' },
   maintenance: { bg: '#fee2e2', color: '#991b1b', label: 'Maintenance' },
@@ -37,45 +37,47 @@ export default function PageVehiculesGerant() {
   const [resas, setResas] = useState<ResaActive[]>([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
+  const [overlay, setOverlay] = useState<Vehicule | null>(null);
 
   async function charger() {
     try {
       const [vRes, rRes] = await Promise.all([
-        fetch('/api/vehicules?limite=50').then((r) => r.json()),
+        fetch('/api/vehicules?limite=100').then((r) => r.json()),
         fetch('/api/reservations').then((r) => r.json()),
       ]);
       if (vRes.success) setVehicules(vRes.data.vehicules);
       else setErreur(vRes.message);
       if (rRes.success) {
-        const aujourd_hui = new Date();
-        setResas(
-          (rRes.data as ResaActive[]).filter(
-            (r) => ['en_attente', 'confirmee'].includes(r.statut) && new Date(r.dateFin) >= aujourd_hui
-          )
-        );
+        const auj = new Date();
+        setResas((rRes.data as ResaActive[]).filter(
+          (r) => ['en_attente', 'confirmee'].includes(r.statut) && new Date(r.dateFin) >= auj
+        ));
       }
-    } catch {
-      setErreur('Impossible de charger les véhicules');
-    } finally {
-      setChargement(false);
-    }
+    } catch { setErreur('Impossible de charger les véhicules'); }
+    finally { setChargement(false); }
   }
 
   async function supprimer(id: string, nom: string) {
     if (!confirm(`Supprimer ${nom} ?`)) return;
     const res = await fetch(`/api/vehicules/${id}`, { method: 'DELETE' });
     const json = await res.json();
-    if (json.success) setVehicules((v) => v.filter((x) => x._id !== id));
+    if (json.success) { setVehicules((v) => v.filter((x) => x._id !== id)); setOverlay(null); }
     else alert(json.message);
   }
 
   useEffect(() => { charger(); }, []);
 
-  // Réservations actives/futures pour un véhicule donné, triées par date
   function resasDuVehicule(vid: string) {
     return resas
       .filter((r) => r.vehicule?._id?.toString() === vid)
       .sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime());
+  }
+
+  function badgeDispo(vid: string) {
+    const periodes = resasDuVehicule(vid);
+    if (periodes.some((r) => r.statut === 'confirmee')) return { bg: '#fee2e2', color: '#991b1b', label: 'Réservé' };
+    if (periodes.some((r) => r.statut === 'en_attente')) return { bg: '#fef9c3', color: '#713f12', label: 'En attente' };
+    return { bg: '#dcfce7', color: '#166534', label: 'Libre' };
   }
 
   return (
@@ -87,7 +89,7 @@ export default function PageVehiculesGerant() {
             ← Tableau de bord
           </Link>
           <Link href="/gerant/vehicules/nouveau" className="btn" style={{ textDecoration: 'none', padding: '8px 16px' }}>
-            + Ajouter un véhicule
+            + Ajouter
           </Link>
         </div>
       </div>
@@ -104,89 +106,163 @@ export default function PageVehiculesGerant() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+      {/* Vue liste */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {vehicules.map((v) => {
-          const s = COULEUR_STATUT[v.statut];
+          const s = STATUT_TECH[v.statut];
+          const d = badgeDispo(v._id);
           const periodes = resasDuVehicule(v._id);
-          const aConfirmee = periodes.some((r) => r.statut === 'confirmee');
-          const aEnAttente = periodes.some((r) => r.statut === 'en_attente');
-
-          // Badge de disponibilité réelle
-          const dispo = aConfirmee
-            ? { bg: '#fee2e2', color: '#991b1b', label: 'Réservé' }
-            : aEnAttente
-            ? { bg: '#fef9c3', color: '#713f12', label: 'En attente' }
-            : { bg: '#dcfce7', color: '#166534', label: 'Libre' };
-
           return (
-            <div key={v._id} className="card" style={{ padding: '16px' }}>
+            <div
+              key={v._id}
+              onClick={() => setOverlay(v)}
+              className="card"
+              style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', transition: 'box-shadow 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(27,59,138,0.12)')}
+              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '')}
+            >
+              {/* Miniature */}
               {v.photos[0] ? (
-                <img src={v.photos[0]} alt={`${v.marque} ${v.modele}`} style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }} />
+                <img src={v.photos[0]} alt="" style={{ width: '64px', height: '48px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: '100%', height: '180px', background: '#f3f4f6', borderRadius: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-                  Pas de photo
+                <div style={{ width: '64px', height: '48px', background: '#f3f4f6', borderRadius: '6px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#9ca3af' }}>
+                  No photo
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: '0 0 4px' }}>{v.marque} {v.modele}</h3>
-                  <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: '0.875rem' }}>{v.annee}</p>
-                  <p style={{ margin: 0, fontWeight: 600 }}>{v.prixParJour.toLocaleString()} FCFA / jour</p>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                  {/* Statut technique du véhicule */}
-                  <span style={{ background: s.bg, color: s.color, padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>
-                    {s.label}
-                  </span>
-                  {/* Disponibilité réelle selon réservations */}
-                  <span style={{ background: dispo.bg, color: dispo.color, padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>
-                    {dispo.label}
-                  </span>
+              {/* Infos principales */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{v.marque} {v.modele} <span style={{ fontWeight: 400, color: '#6b7280' }}>{v.annee}</span></div>
+                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                  {v.ville === 'pointe-noire' ? 'Pointe-Noire' : 'Brazzaville'} · {v.prixParJour.toLocaleString()} FCFA/j
+                  {v.prixParHeure ? ` · ${v.prixParHeure.toLocaleString()} FCFA/h` : ''}
                 </div>
               </div>
 
-              {/* Périodes de réservation */}
-              {periodes.length > 0 && (
-                <div style={{ marginTop: '10px', borderTop: '1px solid #f3f4f6', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {periodes.map((r) => {
-                    const estConfirmee = r.statut === 'confirmee';
-                    return (
-                      <div key={r._id} style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '6px 10px', borderRadius: '6px',
-                        background: estConfirmee ? '#fef2f2' : '#fefce8',
-                        border: `1px solid ${estConfirmee ? '#fca5a5' : '#fde68a'}`,
-                      }}>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: estConfirmee ? '#dc2626' : '#92400e' }}>
-                            {estConfirmee ? '● Confirmé' : '○ En attente'}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '6px' }}>
-                            {r.client?.nom}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.72rem', color: '#374151', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          {fmt(r.dateDebut)} → {fmt(r.dateFin)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {/* Créneaux actifs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '180px' }}>
+                {periodes.length === 0 ? (
+                  <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Aucune réservation</span>
+                ) : periodes.slice(0, 2).map((r) => (
+                  <span key={r._id} style={{ fontSize: '0.72rem', color: r.statut === 'confirmee' ? '#dc2626' : '#92400e', background: r.statut === 'confirmee' ? '#fef2f2' : '#fefce8', padding: '2px 7px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                    {r.statut === 'confirmee' ? '●' : '○'} {fmt(r.dateDebut)} → {fmt(r.dateFin)}
+                  </span>
+                ))}
+                {periodes.length > 2 && <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>+{periodes.length - 2} autre{periodes.length - 2 > 1 ? 's' : ''}</span>}
+              </div>
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button onClick={() => router.push(`/gerant/vehicules/${v._id}/modifier`)} style={{ flex: 1, padding: '8px', background: '#f3f4f6', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}>
-                  Modifier
-                </button>
-                <button onClick={() => supprimer(v._id, `${v.marque} ${v.modele}`)} style={{ flex: 1, padding: '8px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}>
-                  Supprimer
-                </button>
+              {/* Badges statut */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', flexShrink: 0 }}>
+                <span style={{ background: s.bg, color: s.color, padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>{s.label}</span>
+                <span style={{ background: d.bg, color: d.color, padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>{d.label}</span>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Overlay */}
+      {overlay && (() => {
+        const periodes = resasDuVehicule(overlay._id);
+        const s = STATUT_TECH[overlay.statut];
+        const d = badgeDispo(overlay._id);
+        return (
+          <div
+            onClick={() => setOverlay(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: 'white', borderRadius: '14px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
+            >
+              {/* Photo */}
+              {overlay.photos[0] && (
+                <img src={overlay.photos[0]} alt="" style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '14px 14px 0 0' }} />
+              )}
+
+              <div style={{ padding: '20px' }}>
+                {/* Titre + badges */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ margin: '0 0 4px' }}>{overlay.marque} {overlay.modele}</h2>
+                    <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{overlay.annee}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <span style={{ background: s.bg, color: s.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>{s.label}</span>
+                    <span style={{ background: d.bg, color: d.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>{d.label}</span>
+                  </div>
+                </div>
+
+                {/* Infos en grille */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+                  {[
+                    { l: 'Couleur', v: overlay.couleur },
+                    { l: 'Ville', v: overlay.ville === 'pointe-noire' ? 'Pointe-Noire' : 'Brazzaville' },
+                    { l: 'Carburant', v: overlay.carburant },
+                    { l: 'Transmission', v: overlay.transmission },
+                    { l: 'Places', v: overlay.nombrePlaces },
+                    { l: 'Kilométrage', v: `${overlay.kilometrage.toLocaleString()} km` },
+                    { l: 'Prix / jour', v: `${overlay.prixParJour.toLocaleString()} FCFA` },
+                    ...(overlay.prixParHeure ? [{ l: 'Prix / heure', v: `${overlay.prixParHeure.toLocaleString()} FCFA` }] : []),
+                  ].map(({ l, v }) => (
+                    <div key={l} style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px 12px' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#6b7280', marginBottom: '2px' }}>{l}</div>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {overlay.description && (
+                  <p style={{ color: '#4b5563', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '16px' }}>{overlay.description}</p>
+                )}
+
+                {/* Périodes de réservation */}
+                {periodes.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Réservations actives / à venir</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {periodes.map((r) => {
+                        const conf = r.statut === 'confirmee';
+                        return (
+                          <div key={r._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: '8px', background: conf ? '#fef2f2' : '#fefce8', border: `1px solid ${conf ? '#fca5a5' : '#fde68a'}` }}>
+                            <div>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: conf ? '#dc2626' : '#92400e' }}>{conf ? '● Confirmé' : '○ En attente'}</span>
+                              <span style={{ fontSize: '0.78rem', color: '#6b7280', marginLeft: '8px' }}>{r.client?.nom}</span>
+                            </div>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#374151' }}>{fmt(r.dateDebut)} → {fmt(r.dateFin)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => router.push(`/gerant/vehicules/${overlay._id}/modifier`)}
+                    style={{ flex: 1, padding: '10px', background: '#f3f4f6', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => router.push(`/gerant/vehicules/nouveau?dupliquer=${overlay._id}`)}
+                    style={{ flex: 1, padding: '10px', background: 'rgba(27,59,138,0.08)', color: '#1B3B8A', border: '1px solid rgba(27,59,138,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+                  >
+                    Dupliquer
+                  </button>
+                  <button
+                    onClick={() => supprimer(overlay._id, `${overlay.marque} ${overlay.modele}`)}
+                    style={{ flex: 1, padding: '10px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

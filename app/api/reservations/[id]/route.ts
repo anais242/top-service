@@ -146,10 +146,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           reservation.chauffeur = body.chauffeurId || null;
           reservation.statutChauffeur = body.chauffeurId ? 'en_attente' : 'non_attribue';
         } else if (body.statut === 'confirmee' && reservation.avecChauffeur && !reservation.chauffeur) {
+          // Cherche les chauffeurs occupés sur la même période (chevauchement de dates)
           const reservationsActives = await Reservation.find({
             statut: 'confirmee',
             statutChauffeur: { $in: ['en_attente', 'acceptee'] },
             chauffeur: { $ne: null },
+            dateDebut: { $lt: reservation.dateFin },
+            dateFin:   { $gt: reservation.dateDebut },
           }).select('chauffeur').lean();
           const occupe = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));
           const chauffeurLibre = await User.findOne({ role: 'chauffeur', actif: true, _id: { $nin: Array.from(occupe) } }).lean();

@@ -62,6 +62,21 @@ export default function PageReservationsGerant() {
     return () => window.removeEventListener('focus', onFocus);
   }, []);
 
+  // Retourne les IDs chauffeurs déjà confirmés sur la même période qu'une réservation
+  function chauffeursOccupesPour(resa: Reservation): Set<string> {
+    const debut = new Date(resa.dateDebut).getTime();
+    const fin   = new Date(resa.dateFin).getTime();
+    const occupes = new Set<string>();
+    for (const r of reservations) {
+      if (r._id === resa._id || r.statut !== 'confirmee' || !r.chauffeur?._id) continue;
+      if (!['en_attente', 'acceptee'].includes(r.statutChauffeur ?? '')) continue;
+      const d2 = new Date(r.dateDebut).getTime();
+      const f2 = new Date(r.dateFin).getTime();
+      if (debut < f2 && fin > d2) occupes.add(r.chauffeur._id);
+    }
+    return occupes;
+  }
+
   // Retourne l'ensemble des IDs véhicules déjà confirmés qui chevauchent la période d'une réservation
   function vehiculesOccupesPour(resa: Reservation): Set<string> {
     const debut = new Date(resa.dateDebut).getTime();
@@ -370,7 +385,8 @@ export default function PageReservationsGerant() {
 
                   {/* Bloc chauffeur */}
                   {r.avecChauffeur && (() => {
-                    const tousOccupes = chauffeurs.length > 0 && chauffeurs.every((c) => c.estOccupe);
+                    const chauffeursOccupes = chauffeursOccupesPour(r);
+                    const tousOccupes = chauffeurs.length > 0 && chauffeurs.every((c) => chauffeursOccupes.has(c._id));
                     const aucunChauffeur = chauffeurs.length === 0;
                     return (
                       <>
@@ -380,26 +396,29 @@ export default function PageReservationsGerant() {
                           </div>
                         )}
                         {chauffeurs.length > 0 && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <select
-                        value={chauffeurSelectionne[r._id] || ''}
-                        onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
-                        style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
-                      >
-                        <option value="">— Chauffeur (auto-assignation) —</option>
-                        {chauffeurs.map((c) => (
-                          <option key={c._id} value={c._id} disabled={!!c.estOccupe}>
-                            {c.nom}{c.estOccupe ? ' (occupé)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => assignerChauffeur(r._id)}
-                        style={{ padding: '8px 14px', background: 'rgba(22,163,74,0.08)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
-                      >
-                        Assigner
-                      </button>
-                    </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <select
+                              value={chauffeurSelectionne[r._id] || ''}
+                              onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
+                              style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                            >
+                              <option value="">— Chauffeur (auto-assignation) —</option>
+                              {chauffeurs.map((c) => {
+                                const occupe = chauffeursOccupes.has(c._id);
+                                return (
+                                  <option key={c._id} value={c._id} disabled={occupe}>
+                                    {c.nom}{occupe ? ' (occupé sur ces dates)' : ''}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                            <button
+                              onClick={() => assignerChauffeur(r._id)}
+                              style={{ padding: '8px 14px', background: 'rgba(22,163,74,0.08)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                            >
+                              Assigner
+                            </button>
+                          </div>
                         )}
                       </>
                     );
@@ -473,28 +492,34 @@ export default function PageReservationsGerant() {
                     </div>
                   )}
                   {/* Assignation chauffeur */}
-                  {r.avecChauffeur && chauffeurs.length > 0 && (
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <select
-                        value={chauffeurSelectionne[r._id] || ''}
-                        onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
-                        style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
-                      >
-                        <option value="">— Sélectionner un chauffeur —</option>
-                        {chauffeurs.map((c) => (
-                          <option key={c._id} value={c._id} disabled={!!c.estOccupe}>
-                            {c.nom}{c.estOccupe ? ' (occupé)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => assignerChauffeur(r._id)}
-                        style={{ padding: '8px 16px', background: 'rgba(22,163,74,0.1)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
-                      >
-                        Assigner
-                      </button>
-                    </div>
-                  )}
+                  {r.avecChauffeur && chauffeurs.length > 0 && (() => {
+                    const chauffeursOccupes = chauffeursOccupesPour(r);
+                    return (
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                          value={chauffeurSelectionne[r._id] || ''}
+                          onChange={(e) => setChauffeurSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
+                          style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                        >
+                          <option value="">— Sélectionner un chauffeur —</option>
+                          {chauffeurs.map((c) => {
+                            const occupe = chauffeursOccupes.has(c._id);
+                            return (
+                              <option key={c._id} value={c._id} disabled={occupe}>
+                                {c.nom}{occupe ? ' (occupé sur ces dates)' : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <button
+                          onClick={() => assignerChauffeur(r._id)}
+                          style={{ padding: '8px 16px', background: 'rgba(22,163,74,0.1)', color: 'var(--vert)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                        >
+                          Assigner
+                        </button>
+                      </div>
+                    );
+                  })()}
                   {annulationEnAttente === r._id ? (() => {
                     const calc = calcAnnulation(r);
                     return (

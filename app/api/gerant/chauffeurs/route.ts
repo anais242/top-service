@@ -18,12 +18,15 @@ export async function GET(req: NextRequest) {
   await connectDB();
   const chauffeurs = await User.find({ role: 'chauffeur' }).select('-motDePasse').sort({ createdAt: -1 }).lean();
 
-  // Détecter les chauffeurs sur une réservation confirmée active + récupérer leur véhicule
+  // Détecter les chauffeurs EN MISSION MAINTENANT (dateDebut <= now <= dateFin)
+  const now = new Date();
   const ids = chauffeurs.map((c) => c._id);
   const reservationsActives = await Reservation.find({
     chauffeur: { $in: ids },
     statut: 'confirmee',
     statutChauffeur: { $in: ['en_attente', 'acceptee'] },
+    dateDebut: { $lte: now },
+    dateFin:   { $gte: now },
   }).populate('vehicule', 'marque modele annee').select('chauffeur vehicule dateDebut dateFin').lean();
 
   const occupes = new Set(reservationsActives.map((r) => r.chauffeur?.toString()));

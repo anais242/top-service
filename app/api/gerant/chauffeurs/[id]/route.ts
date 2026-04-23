@@ -43,3 +43,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   return NextResponse.json<ApiResponse>({ success: false, message: 'Action non reconnue' }, { status: 400 });
 }
+
+// DELETE /api/gerant/chauffeurs/[id] — supprimer définitivement un chauffeur
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = req.cookies.get(COOKIE_ACCESS)?.value;
+  const payload = token ? await verifierAccessToken(token) : null;
+  if (!payload || payload.role !== 'gerant')
+    return NextResponse.json<ApiResponse>({ success: false, message: 'Accès refusé' }, { status: 403 });
+
+  await connectDB();
+  const chauffeur = await User.findOneAndDelete({ _id: params.id, role: 'chauffeur' });
+  if (!chauffeur)
+    return NextResponse.json<ApiResponse>({ success: false, message: 'Chauffeur introuvable' }, { status: 404 });
+
+  return NextResponse.json<ApiResponse>({ success: true, message: 'Chauffeur supprimé' });
+}

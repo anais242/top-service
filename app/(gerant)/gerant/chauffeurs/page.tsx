@@ -71,6 +71,17 @@ export default function PageChauffeurs() {
     setActionEnCours(null);
   }
 
+  async function supprimerChauffeur(c: Chauffeur) {
+    if (!confirm(`Supprimer définitivement ${c.nom} ? Cette action est irréversible.`)) return;
+    setActionEnCours(c._id);
+    const res  = await fetch(`/api/gerant/chauffeurs/${c._id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) {
+      setChauffeurs((prev) => prev.filter((x) => x._id !== c._id));
+    } else { alert(json.message); }
+    setActionEnCours(null);
+  }
+
   async function reinitialiserMdp(id: string) {
     if (!confirm('Générer un nouveau mot de passe pour ce chauffeur ?')) return;
     setActionEnCours(id);
@@ -220,6 +231,13 @@ export default function PageChauffeurs() {
                       style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: enAction ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '0.875rem', background: 'white', color: '#374151' }}
                     >
                       Réinitialiser mot de passe
+                    </button>
+                    <button
+                      onClick={() => supprimerChauffeur(c)}
+                      disabled={enAction}
+                      style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: enAction ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '0.875rem', background: '#111827', color: 'white', marginLeft: 'auto' }}
+                    >
+                      {enAction ? '...' : 'Supprimer'}
                     </button>
                   </div>
                 </div>

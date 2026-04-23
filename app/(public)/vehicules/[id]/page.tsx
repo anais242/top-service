@@ -182,7 +182,7 @@ export default function PageDetailPublic() {
               </div>
             )}
           </div>
-          {vehicule.prixParHeure && !avecChauffeur && (
+          {vehicule.prixParHeure && (
             <div style={{ display: 'flex', background: 'var(--gris-light)', borderRadius: '10px', padding: '4px', gap: '4px' }}>
               {(['jour', 'heure'] as const).map((t) => (
                 <button key={t} onClick={() => { setTypeLocation(t); setDateDebut(''); setDateFin(''); }}
@@ -243,7 +243,7 @@ export default function PageDetailPublic() {
                 { val: false, label: 'Sans' },
                 { val: true,  label: 'Avec' },
               ] as { val: boolean; label: string }[]).map(({ val, label }) => (
-                <button key={String(val)} onClick={() => { setAvecChauffeur(val); if (val) { setTypeLocation('jour'); } }}
+                <button key={String(val)} onClick={() => { setAvecChauffeur(val); }}
                   style={{
                     padding: '10px 8px', borderRadius: '8px', cursor: 'pointer',
                     border: avecChauffeur === val ? '2px solid #1B3B8A' : '2px solid #E5E7EB',

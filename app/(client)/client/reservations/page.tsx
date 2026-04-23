@@ -9,6 +9,7 @@ interface Reservation {
   vehicule: { marque: string; modele: string; annee: number; photos: string[] };
   dateDebut: string; dateFin: string; nombreJours: number;
   prixTotal: number; statut: string; messageGerant: string; createdAt: string;
+  notifClient?: { message: string; lu: boolean; date: string } | null;
 }
 
 const STATUT: Record<string, { label: string; bg: string; color: string }> = {
@@ -31,6 +32,17 @@ function ContenuReservations() {
       .then((j) => { if (j.success) setReservations(j.data); })
       .finally(() => setChargement(false));
   }, []);
+
+  async function marquerNotifLue(id: string) {
+    await fetch(`/api/reservations/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marquerNotifLue: true }),
+    });
+    setReservations((prev) => prev.map((x) => x._id === id
+      ? { ...x, notifClient: x.notifClient ? { ...x.notifClient, lu: true } : null }
+      : x
+    ));
+  }
 
   async function annuler(id: string) {
     if (!confirm('Annuler cette réservation ?')) return;
@@ -79,6 +91,17 @@ function ContenuReservations() {
           const s = STATUT[r.statut] ?? STATUT.en_attente;
           return (
             <div key={r._id} className="card" style={{ padding: '20px' }}>
+              {r.notifClient && !r.notifClient.lu && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '14px', padding: '12px 14px', background: '#fffbeb', border: '1.5px solid #f59e0b', borderRadius: '10px' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>🔔</span>
+                    <span style={{ fontSize: '0.875rem', color: '#92400e', fontWeight: 600 }}>{r.notifClient.message}</span>
+                  </div>
+                  <button onClick={() => marquerNotifLue(r._id)} style={{ flexShrink: 0, padding: '4px 12px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                    Vu
+                  </button>
+                </div>
+              )}
               <div className="resa-card-inner">
                 {r.vehicule?.photos?.[0] && (
                   <img src={r.vehicule.photos[0]} alt="" className="resa-thumb" />

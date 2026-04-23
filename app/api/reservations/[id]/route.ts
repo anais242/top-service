@@ -8,6 +8,8 @@ import type { ApiResponse } from '@/types';
 import User from '@/models/User';
 import Vehicule from '@/models/Vehicule';
 import { envoyerEmailStatutReservation } from '@/lib/emails/resend';
+import ContratVehicule from '@/models/ContratVehicule';
+import { CHAUFFEUR_JOUR, tarifChauffeur } from '@/lib/tarifs';
 
 // GET /api/reservations/[id]
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -66,6 +68,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return `Ce véhicule est déjà réservé par ${nom} du ${debut} au ${fin}`;
     };
 
+    // Recalcule le prix total si le véhicule change
+    const recalculerPrix = async (vehiculeId: string): Promise<number> => {
+      const v = await Vehicule.findById(vehiculeId).lean();
+      if (!v) return reservation.prixTotal;
+      const contrat = await ContratVehicule.findOne({ client: reservation.client, vehicule: vehiculeId, actif: true }).lean();
+      const prixJour  = contrat ? contrat.prixParJour  : v.prixParJour;
+      const prixHeure = contrat ? contrat.prixParHeure : v.prixParHeure;
+      let prix = reservation.typeLocation === 'heure' && reservation.nombreHeures && prixHeure
+        ? reservation.nombreHeures * prixHeure
+        : reservation.nombreJours * prixJour;
+      if (reservation.avecChauffeur) {
+        prix += reservation.typeLocation === 'heure'
+          ? tarifChauffeur(new Date(reservation.dateDebut).getHours())
+          : reservation.nombreJours * CHAUFFEUR_JOUR;
+      }
+      return prix;
+    };
+
     // Gérant peut confirmer, refuser, terminer, assigner un chauffeur ou un véhicule
     if (payload.role === 'gerant') {
       if (body.statut) {
@@ -83,7 +103,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
         reservation.statut = body.statut;
         if (body.messageGerant) reservation.messageGerant = body.messageGerant;
-        if (body.vehiculeId) reservation.vehicule = body.vehiculeId;
+        if (body.vehiculeId && body.vehiculeId.toString() !== reservation.vehicule.toString()) {
+          const nouveauPrix = await recalculerPrix(body.vehiculeId);
+          const vDoc = await Vehicule.findById(body.vehiculeId).select('marque modele').lean();
+          const nomV = vDoc ? `${vDoc.marque} ${vDoc.modele}` : 'nouveau véhicule';
+          reservation.vehicule  = body.vehiculeId;
+          reservation.prixTotal = nouveauPrix;
+          reservation.notifClient = { message: `Réservation confirmée — véhicule attribué : ${nomV}. Prix total : ${nouveauPrix.toLocaleString('fr-FR')} FCFA`, lu: false, date: new Date() };
+          reservation.markModified('notifClient');
+        } else if (body.vehiculeId) {
+          reservation.vehicule = body.vehiculeId;
+        }
 
         // Chauffeur : pré-sélectionné > auto-assignation
         if (body.chauffeurId !== undefined) {
@@ -114,7 +144,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           return NextResponse.json<ApiResponse>({ success: false, message: 'vehiculeId requis' }, { status: 400 });
         const erreur = await verifierDisponibiliteVehicule(body.vehiculeId);
         if (erreur) return NextResponse.json<ApiResponse>({ success: false, message: erreur }, { status: 409 });
-        reservation.vehicule = body.vehiculeId;
+        if (body.vehiculeId.toString() !== reservation.vehicule.toString()) {
+          const nouveauPrix = await recalculerPrix(body.vehiculeId);
+          const vDoc = await Vehicule.findById(body.vehiculeId).select('marque modele').lean();
+          const nomV = vDoc ? `${vDoc.marque} ${vDoc.modele}` : 'nouveau véhicule';
+          reservation.vehicule  = body.vehiculeId;
+          reservation.prixTotal = nouveauPrix;
+          reservation.notifClient = { message: `Le gérant a modifié votre véhicule : ${nomV}. Nouveau prix : ${nouveauPrix.toLocaleString('fr-FR')} FCFA`, lu: false, date: new Date() };
+          reservation.markModified('notifClient');
+        } else {
+          reservation.vehicule = body.vehiculeId;
+        }
         await reservation.save();
         const updated = await reservation.populate('vehicule', 'marque modele annee photos');
         return NextResponse.json<ApiResponse>({ success: true, data: updated });
@@ -122,10 +162,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         return NextResponse.json<ApiResponse>({ success: false, message: 'Paramètre manquant' }, { status: 400 });
       }
     }
-    // Client peut uniquement annuler ses propres réservations en attente
+    // Client peut annuler ses réservations en attente ou marquer une notif comme lue
     else if (payload.role === 'client') {
       if (reservation.client.toString() !== payload.userId)
         return NextResponse.json<ApiResponse>({ success: false, message: 'Accès refusé' }, { status: 403 });
+      if (body.marquerNotifLue) {
+        if (reservation.notifClient) {
+          (reservation.notifClient as Record<string, unknown>).lu = true;
+          reservation.markModified('notifClient');
+        }
+        await reservation.save();
+        return NextResponse.json<ApiResponse>({ success: true });
+      }
       if (body.statut !== 'annulee' || reservation.statut !== 'en_attente')
         return NextResponse.json<ApiResponse>({ success: false, message: 'Annulation impossible' }, { status: 400 });
       reservation.statut = 'annulee';

@@ -38,7 +38,7 @@ export default function NavbarGerant({ nom }: { nom?: string }) {
       )}
 
       <nav className="navbar">
-        <Link href="/gerant/tableau-de-bord" className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Link href="/" className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img src="https://res.cloudinary.com/dfwyskgso/image/upload/w_80,h_80,c_fill/top-service/logo.png" alt="Top Service" style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
           Top Service
         </Link>

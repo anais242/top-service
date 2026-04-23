@@ -34,6 +34,7 @@ export default function PageReservationsGerant() {
   const [messageGerant, setMessageGerant] = useState<Record<string, string>>({});
   const [chauffeurSelectionne, setChauffeurSelectionne] = useState<Record<string, string>>({});
   const [vehiculeSelectionne, setVehiculeSelectionne] = useState<Record<string, string>>({});
+  const [erreurVehicule, setErreurVehicule] = useState<Record<string, string>>({});
 
   useEffect(() => {
     Promise.all([
@@ -47,7 +48,22 @@ export default function PageReservationsGerant() {
     }).finally(() => setChargement(false));
   }, []);
 
+  // Retourne l'ensemble des IDs véhicules déjà confirmés qui chevauchent la période d'une réservation
+  function vehiculesOccupesPour(resa: Reservation): Set<string> {
+    const debut = new Date(resa.dateDebut).getTime();
+    const fin   = new Date(resa.dateFin).getTime();
+    const occupes = new Set<string>();
+    for (const r of reservations) {
+      if (r._id === resa._id || r.statut !== 'confirmee' || !r.vehicule?._id) continue;
+      const d2 = new Date(r.dateDebut).getTime();
+      const f2 = new Date(r.dateFin).getTime();
+      if (debut < f2 && fin > d2) occupes.add(r.vehicule._id);
+    }
+    return occupes;
+  }
+
   async function changerStatut(id: string, statut: string, opts?: { chauffeurId?: string; vehiculeId?: string }) {
+    setErreurVehicule((e) => ({ ...e, [id]: '' }));
     const body: Record<string, unknown> = { statut, messageGerant: messageGerant[id] || '' };
     if (opts?.chauffeurId !== undefined) body.chauffeurId = opts.chauffeurId || null;
     if (opts?.vehiculeId) body.vehiculeId = opts.vehiculeId;
@@ -58,7 +74,6 @@ export default function PageReservationsGerant() {
     const json = await res.json();
     if (json.success) {
       const updated = json.data;
-      // updated.chauffeur est maintenant { _id, nom } grâce au populate
       const chauffeurData = updated.chauffeur && typeof updated.chauffeur === 'object' && 'nom' in updated.chauffeur
         ? updated.chauffeur as { _id: string; nom: string }
         : undefined;
@@ -66,12 +81,15 @@ export default function PageReservationsGerant() {
         ? { ...x, statut, chauffeur: chauffeurData ?? x.chauffeur, statutChauffeur: updated.statutChauffeur ?? x.statutChauffeur }
         : x
       ));
-      // Rafraîchir la liste des chauffeurs pour mettre à jour estOccupe
       if (statut === 'confirmee') {
         fetch('/api/gerant/chauffeurs').then((r) => r.json()).then((j) => { if (j.success) setChauffeurs(j.data); });
       }
     } else {
-      alert(json.message);
+      if (res.status === 409) {
+        setErreurVehicule((e) => ({ ...e, [id]: json.message }));
+      } else {
+        alert(json.message);
+      }
     }
   }
 
@@ -88,7 +106,6 @@ export default function PageReservationsGerant() {
         ? { ...x, chauffeur: chauffeur ? { _id: chauffeur._id, nom: chauffeur.nom } : null, statutChauffeur: chauffeurId ? 'en_attente' : 'non_attribue' }
         : x
       ));
-      // Rafraîchir estOccupe sur les chauffeurs
       fetch('/api/gerant/chauffeurs').then((r) => r.json()).then((j) => { if (j.success) setChauffeurs(j.data); });
     } else {
       alert(json.message);
@@ -98,6 +115,7 @@ export default function PageReservationsGerant() {
   async function assignerVehicule(id: string) {
     const vehiculeId = vehiculeSelectionne[id];
     if (!vehiculeId) { alert('Sélectionnez un véhicule'); return; }
+    setErreurVehicule((e) => ({ ...e, [id]: '' }));
     const res = await fetch(`/api/reservations/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vehiculeId }),
@@ -112,7 +130,11 @@ export default function PageReservationsGerant() {
         ));
       }
     } else {
-      alert(json.message);
+      if (res.status === 409) {
+        setErreurVehicule((e) => ({ ...e, [id]: json.message }));
+      } else {
+        alert(json.message);
+      }
     }
   }
 
@@ -196,7 +218,9 @@ export default function PageReservationsGerant() {
                 </div>
               </div>
 
-              {r.statut === 'en_attente' && (
+              {r.statut === 'en_attente' && (() => {
+                const occupes = vehiculesOccupesPour(r);
+                return (
                 <div style={{ marginTop: '16px', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
                   {/* Sélection véhicule */}
                   {vehicules.length > 0 && (
@@ -206,14 +230,21 @@ export default function PageReservationsGerant() {
                       </p>
                       <select
                         value={vehiculeSelectionne[r._id] || ''}
-                        onChange={(e) => setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
-                        style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                        onChange={(e) => { setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value })); setErreurVehicule((e) => ({ ...e, [r._id]: '' })); }}
+                        style={{ width: '100%', padding: '8px 12px', border: `1.5px solid ${erreurVehicule[r._id] ? '#dc2626' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
                       >
-                        <option value="">— Garder le véhicule actuel —</option>
+                        <option value="" disabled={occupes.has(r.vehicule?._id ?? '')}>
+                          {occupes.has(r.vehicule?._id ?? '') ? '⚠ Véhicule actuel occupé — choisissez-en un autre' : '— Garder le véhicule actuel —'}
+                        </option>
                         {vehicules.map((v) => (
-                          <option key={v._id} value={v._id}>{v.marque} {v.modele} {v.annee}</option>
+                          <option key={v._id} value={v._id} disabled={occupes.has(v._id)}>
+                            {v.marque} {v.modele} {v.annee}{occupes.has(v._id) ? ' (occupé sur ces dates)' : ''}
+                          </option>
                         ))}
                       </select>
+                      {erreurVehicule[r._id] && (
+                        <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626' }}>⚠ {erreurVehicule[r._id]}</p>
+                      )}
                     </div>
                   )}
                   {/* Sélection chauffeur */}
@@ -252,9 +283,12 @@ export default function PageReservationsGerant() {
                     </button>
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
-              {r.statut === 'confirmee' && (
+              {r.statut === 'confirmee' && (() => {
+                const occupes = vehiculesOccupesPour(r);
+                return (
                 <div style={{ marginTop: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '12px' }}>
                   {/* Assignation véhicule */}
                   {vehicules.length > 0 && (
@@ -265,12 +299,14 @@ export default function PageReservationsGerant() {
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <select
                           value={vehiculeSelectionne[r._id] || ''}
-                          onChange={(e) => setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value }))}
-                          style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
+                          onChange={(e) => { setVehiculeSelectionne((s) => ({ ...s, [r._id]: e.target.value })); setErreurVehicule((e) => ({ ...e, [r._id]: '' })); }}
+                          style={{ flex: 1, padding: '8px 12px', border: `1.5px solid ${erreurVehicule[r._id] ? '#dc2626' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '0.875rem', background: 'white' }}
                         >
                           <option value="">— Changer de véhicule —</option>
                           {vehicules.map((v) => (
-                            <option key={v._id} value={v._id}>{v.marque} {v.modele} {v.annee}</option>
+                            <option key={v._id} value={v._id} disabled={occupes.has(v._id)}>
+                              {v.marque} {v.modele} {v.annee}{occupes.has(v._id) ? ' (occupé sur ces dates)' : ''}
+                            </option>
                           ))}
                         </select>
                         <button
@@ -280,6 +316,9 @@ export default function PageReservationsGerant() {
                           Assigner
                         </button>
                       </div>
+                      {erreurVehicule[r._id] && (
+                        <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626' }}>⚠ {erreurVehicule[r._id]}</p>
+                      )}
                     </div>
                   )}
                   {/* Assignation chauffeur */}
@@ -311,7 +350,8 @@ export default function PageReservationsGerant() {
                     </button>
                   </div>
                 </div>
-              )}
+                );
+              })()}
             </div>
           );
         })}

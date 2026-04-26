@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useRouter } from 'next/navigation';
 import NavbarBusiness from '@/app/components/NavbarBusiness';
 import { CHAUFFEUR_JOUR, CHAUFFEUR_NUIT, tarifChauffeur } from '@/lib/tarifs';
@@ -109,7 +110,7 @@ export default function PageVehiculesBusiness() {
           Flotte dédiée à vos conditions négociées
         </p>
 
-        {chargement && <p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p>}
+        {chargement && <LoaderVoiture />}
 
         {!chargement && contrats.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--gris)' }}>

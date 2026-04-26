@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent, useEffect, Suspense } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -130,7 +131,7 @@ function FormNouveauVehicule() {
   }
 
   if (chargementSource) {
-    return <div className="container"><p style={{ textAlign: 'center', color: '#6b7280' }}>Chargement...</p></div>;
+    return <div className="container"><LoaderVoiture /></div>;
   }
 
   const d = source; // raccourci pour les valeurs par défaut

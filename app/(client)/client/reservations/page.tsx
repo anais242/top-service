@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -75,7 +76,7 @@ function ContenuReservations() {
         </div>
       )}
 
-      {chargement && <p style={{ textAlign: 'center', color: '#6b7280' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
 
       {!chargement && reservations.length === 0 && (
         <div className="card" style={{ textAlign: 'center', color: '#6b7280' }}>

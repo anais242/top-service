@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ export default function PageDetailVehicule() {
       .finally(() => setChargement(false));
   }, [id]);
 
-  if (chargement) return <div className="container"><p style={{ textAlign: 'center' }}>Chargement...</p></div>;
+  if (chargement) return <div className="container"><LoaderVoiture /></div>;
   if (!vehicule) return <div className="container"><div className="erreur">Véhicule introuvable</div></div>;
 
   const infos = [

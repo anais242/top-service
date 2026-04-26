@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import Link from 'next/link';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -63,7 +64,7 @@ export default function TableauDeBordGerant() {
     <div style={{ background: 'var(--gris-light)', minHeight: '100vh', padding: '32px 0' }}>
       <div className="container">
         {chargement && (
-          <p style={{ textAlign: 'center', color: 'var(--gris)', padding: '60px' }}>Chargement des statistiques...</p>
+          <LoaderVoiture texte="Chargement des statistiques..." />
         )}
 
         {stats && (

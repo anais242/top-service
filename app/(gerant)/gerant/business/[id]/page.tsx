@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -77,7 +78,7 @@ export default function PageDetailCorporate() {
     finally { setEnvoi(false); }
   }
 
-  if (chargement) return <div className="container"><p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p></div>;
+  if (chargement) return <div className="container"><LoaderVoiture /></div>;
   if (!client) return <div className="container"><div className="erreur">Client introuvable</div></div>;
 
   const nbSelectionnes = Object.keys(contrats).length;

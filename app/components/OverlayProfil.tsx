@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 interface Props {
   onClose: () => void;
@@ -60,7 +61,7 @@ export default function OverlayProfil({ onClose, onSave }: Props) {
         </div>
 
         {chargement ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>Chargement...</div>
+          <LoaderVoiture />
         ) : (
           <form onSubmit={handleSubmit} style={{ padding: '20px 24px 24px' }}>
             {erreur && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.875rem', fontWeight: 500 }}>{erreur}</div>}

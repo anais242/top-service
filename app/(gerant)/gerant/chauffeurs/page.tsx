@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, FormEvent } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 interface VehiculeActuel { marque: string; modele: string; annee: number; dateDebut: string; dateFin: string; }
 
@@ -146,7 +147,7 @@ export default function PageChauffeurs() {
         </div>
       )}
 
-      {chargement && <p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
 
       {!chargement && chauffeurs.length === 0 && !formulaire && (
         <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--gris)' }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 interface Mission {
   _id: string;
@@ -90,7 +91,7 @@ export default function PageMissionsChauffeur() {
         ))}
       </div>
 
-      {chargement && <p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
       {!chargement && filtrees.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--gris)' }}>
           <p style={{ fontWeight: 600 }}>Aucune mission</p>

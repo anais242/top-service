@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import NavbarBusiness from '@/app/components/NavbarBusiness';
@@ -61,7 +62,7 @@ function Contenu() {
         </div>
 
         {succes && <div className="succes">Réservation envoyée ! Le gérant va la confirmer prochainement.</div>}
-        {chargement && <p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p>}
+        {chargement && <LoaderVoiture />}
 
         {!chargement && reservations.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--gris)' }}>

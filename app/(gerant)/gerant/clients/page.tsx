@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 interface Client {
   _id: string;
@@ -88,7 +89,7 @@ export default function PageClients() {
         />
       </div>
 
-      {chargement && <p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
 
       {!chargement && clientsFiltres.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--gris)' }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NavbarPublique from '@/app/components/NavbarPublique';
@@ -126,7 +127,7 @@ export default function PageDetailPublic() {
     }
   }
 
-  if (chargement) return <div className="container"><p style={{ textAlign: 'center' }}>Chargement...</p></div>;
+  if (chargement) return <div className="container"><LoaderVoiture /></div>;
   if (!vehicule) return <div className="container"><div className="erreur">Véhicule introuvable</div></div>;
 
   const jours = calculerJours();

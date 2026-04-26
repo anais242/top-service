@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import Link from 'next/link';
 
 interface Chauffeur { _id: string; nom: string; estOccupe?: boolean; }
@@ -261,7 +262,7 @@ export default function PageReservationsGerant() {
         ))}
       </div>
 
-      {chargement && <p style={{ textAlign: 'center', color: '#6b7280' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
       {!chargement && reservationsFiltrees.length === 0 && (
         <div className="card" style={{ textAlign: 'center', color: '#6b7280' }}><p>Aucune réservation.</p></div>
       )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -142,7 +143,7 @@ function PageVehiculesGerantInner() {
       </div>
 
       {erreur && <div className="erreur">{erreur}</div>}
-      {chargement && <p style={{ textAlign: 'center', color: '#6b7280' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
 
       {!chargement && vehicules.length === 0 && (
         <div className="card" style={{ textAlign: 'center', color: '#6b7280' }}>

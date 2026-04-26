@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -81,7 +82,7 @@ export default function PageModifierVehicule() {
     if (json.success) setVehicule((v) => v ? { ...v, photos: json.data.photos } : v);
   }
 
-  if (chargement) return <div className="container"><p style={{ textAlign: 'center' }}>Chargement...</p></div>;
+  if (chargement) return <div className="container"><LoaderVoiture /></div>;
   if (!vehicule) return <div className="container"><div className="erreur">{erreur || 'Véhicule introuvable'}</div></div>;
 
   return (

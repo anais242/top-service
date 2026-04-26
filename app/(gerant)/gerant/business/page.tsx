@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 import Link from 'next/link';
 
 interface ClientCorporate {
@@ -42,7 +43,7 @@ export default function PageBusinessGerant() {
         </div>
       </div>
 
-      {chargement && <p style={{ textAlign: 'center', color: 'var(--gris)' }}>Chargement...</p>}
+      {chargement && <LoaderVoiture />}
 
       {!chargement && clients.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--gris)' }}>

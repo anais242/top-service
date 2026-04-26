@@ -5,18 +5,38 @@ import LoaderVoiture from '@/app/components/LoaderVoiture';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-interface Vehicule { _id: string; marque: string; modele: string; annee: number; prixParJour: number; prixParHeure?: number; photos: string[]; }
-interface Contrat { vehicule: Vehicule; prixParJour: number; prixParHeure?: number | null; avecChauffeur: boolean; }
+interface VehiculeDisponible {
+  _id: string; marque: string; modele: string; annee: number;
+  prixParJour: number; prixParHeure?: number; photos: string[];
+  statut: 'disponible' | 'loue' | 'maintenance';
+}
+interface ChauffeurDisponible {
+  _id: string; nom: string; telephone: string;
+  estOccupe: boolean; aReservationAVenir: boolean;
+}
+interface ContratExistant {
+  vehicule: VehiculeDisponible; prixParJour: number; prixParHeure?: number | null;
+  avecChauffeur: boolean; chauffeur?: { _id: string; nom: string; telephone: string } | null;
+}
 interface Client { _id: string; nom: string; email: string; telephone: string; actif: boolean; createdAt: string; }
+interface LigneContrat {
+  vehiculeId: string; prixParJour: string; prixParHeure: string;
+  avecChauffeur: boolean; chauffeurId: string;
+}
 
-interface LigneContrat { vehiculeId: string; prixParJour: string; prixParHeure: string; avecChauffeur: boolean; }
+const BADGE_STATUT: Record<string, { label: string; bg: string; color: string }> = {
+  loue:        { label: 'Loué',        bg: '#FEF3C7', color: '#92400E' },
+  maintenance: { label: 'Maintenance', bg: '#FEE2E2', color: '#991B1B' },
+  disponible:  { label: 'Disponible',  bg: '#D1FAE5', color: '#065F46' },
+};
 
 export default function PageDetailCorporate() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [client, setClient] = useState<Client | null>(null);
-  const [tousVehicules, setTousVehicules] = useState<Vehicule[]>([]);
+  const [tousVehicules, setTousVehicules] = useState<VehiculeDisponible[]>([]);
+  const [chauffeurs, setChauffeurs] = useState<ChauffeurDisponible[]>([]);
   const [contrats, setContrats] = useState<Record<string, LigneContrat>>({});
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
@@ -26,34 +46,44 @@ export default function PageDetailCorporate() {
   useEffect(() => {
     Promise.all([
       fetch(`/api/gerant/business/${id}`).then((r) => r.json()),
-      fetch('/api/vehicules?limite=50').then((r) => r.json()),
-    ]).then(([bj, vj]) => {
+      fetch('/api/gerant/business/disponibilites').then((r) => r.json()),
+    ]).then(([bj, dj]) => {
       if (bj.success) {
         setClient(bj.data.client);
         const map: Record<string, LigneContrat> = {};
-        (bj.data.contrats as Contrat[]).forEach((c) => {
+        (bj.data.contrats as ContratExistant[]).forEach((c) => {
           map[c.vehicule._id] = {
             vehiculeId: c.vehicule._id,
             prixParJour: String(c.prixParJour),
             prixParHeure: c.prixParHeure ? String(c.prixParHeure) : '',
             avecChauffeur: c.avecChauffeur,
+            chauffeurId: c.chauffeur?._id ?? '',
           };
         });
         setContrats(map);
       }
-      if (vj.success) setTousVehicules(vj.data.vehicules ?? vj.data);
+      if (dj.success) {
+        setTousVehicules(dj.data.vehicules ?? []);
+        setChauffeurs(dj.data.chauffeurs ?? []);
+      }
     }).finally(() => setChargement(false));
   }, [id]);
 
-  function toggleVehicule(v: Vehicule) {
+  function toggleVehicule(v: VehiculeDisponible) {
+    const dejaDansContrat = !!contrats[v._id];
+    if (!dejaDansContrat && v.statut !== 'disponible') return;
     setContrats((prev) => {
       if (prev[v._id]) { const next = { ...prev }; delete next[v._id]; return next; }
-      return { ...prev, [v._id]: { vehiculeId: v._id, prixParJour: String(v.prixParJour), prixParHeure: v.prixParHeure ? String(v.prixParHeure) : '', avecChauffeur: false } };
+      return { ...prev, [v._id]: { vehiculeId: v._id, prixParJour: String(v.prixParJour), prixParHeure: v.prixParHeure ? String(v.prixParHeure) : '', avecChauffeur: false, chauffeurId: '' } };
     });
   }
 
   function updateContrat(vehiculeId: string, champ: keyof LigneContrat, valeur: string | boolean) {
-    setContrats((prev) => ({ ...prev, [vehiculeId]: { ...prev[vehiculeId], [champ]: valeur } }));
+    setContrats((prev) => {
+      const ligne = { ...prev[vehiculeId], [champ]: valeur };
+      if (champ === 'avecChauffeur' && valeur === false) ligne.chauffeurId = '';
+      return { ...prev, [vehiculeId]: ligne };
+    });
   }
 
   async function sauvegarder() {
@@ -68,6 +98,7 @@ export default function PageDetailCorporate() {
             vehicule: c.vehiculeId, prixParJour: Number(c.prixParJour),
             prixParHeure: c.prixParHeure ? Number(c.prixParHeure) : null,
             avecChauffeur: c.avecChauffeur,
+            chauffeur: c.chauffeurId || null,
           })),
         }),
       });
@@ -103,7 +134,7 @@ export default function PageDetailCorporate() {
 
       <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '8px' }}>
-          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Véhicules &amp; tarifs du contrat</h2>
+          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Véhicules & chauffeurs du contrat</h2>
           {nbSelectionnes > 0 && (
             <span style={{ background: '#DBEAFE', color: '#1B3B8A', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
               {nbSelectionnes} véhicule{nbSelectionnes > 1 ? 's' : ''}
@@ -115,20 +146,36 @@ export default function PageDetailCorporate() {
           {tousVehicules.map((v) => {
             const selectionne = !!contrats[v._id];
             const c = contrats[v._id];
+            const disponible = v.statut === 'disponible';
+            const peutCliquer = disponible || selectionne;
+            const badge = BADGE_STATUT[v.statut];
+
             return (
-              <div key={v._id} style={{ border: `2px solid ${selectionne ? '#1B3B8A' : '#E5E7EB'}`, borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: 'pointer', background: selectionne ? 'rgba(27,59,138,0.04)' : 'white' }} onClick={() => toggleVehicule(v)}>
+              <div key={v._id} style={{ border: `2px solid ${selectionne ? '#1B3B8A' : disponible ? '#E5E7EB' : '#F3F4F6'}`, borderRadius: '12px', overflow: 'hidden', opacity: peutCliquer ? 1 : 0.5, transition: 'border-color 0.2s' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: peutCliquer ? 'pointer' : 'not-allowed', background: selectionne ? 'rgba(27,59,138,0.04)' : 'white' }}
+                  onClick={() => toggleVehicule(v)}
+                >
                   {v.photos?.[0] && <img src={v.photos[0]} alt="" style={{ width: '60px', height: '44px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />}
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: '0.9rem' }}>{v.marque} {v.modele} {v.annee}</p>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--gris)' }}>Standard : {v.prixParJour.toLocaleString()} FCFA/jour{v.prixParHeure ? ` · ${v.prixParHeure.toLocaleString()} FCFA/h` : ''}</p>
                   </div>
+                  <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: badge.bg, color: badge.color, marginRight: '8px', flexShrink: 0 }}>
+                    {badge.label}
+                  </span>
                   <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: `2px solid ${selectionne ? '#1B3B8A' : '#D1D5DB'}`, background: selectionne ? '#1B3B8A' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
                     {selectionne && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
                 </div>
+
                 {selectionne && (
                   <div style={{ padding: '12px 16px 14px', background: 'rgba(27,59,138,0.03)', borderTop: '1px solid rgba(27,59,138,0.1)' }}>
+                    {!disponible && (
+                      <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#92400E', background: '#FEF3C7', padding: '6px 10px', borderRadius: '6px' }}>
+                        Ce véhicule est actuellement {v.statut === 'loue' ? 'loué' : 'en maintenance'}. Il reste au contrat mais le client ne peut pas l'utiliser tant qu'il est indisponible.
+                      </p>
+                    )}
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                       <div className="form-group" style={{ flex: 1, minWidth: '140px', marginBottom: 0 }}>
                         <label style={{ fontSize: '0.78rem' }}>Prix/jour (FCFA) *</label>
@@ -151,6 +198,19 @@ export default function PageDetailCorporate() {
                           ))}
                         </div>
                       </div>
+                      {c.avecChauffeur && (
+                        <div className="form-group" style={{ flex: 1, minWidth: '180px', marginBottom: 0 }}>
+                          <label style={{ fontSize: '0.78rem' }}>Chauffeur assigné</label>
+                          <select value={c.chauffeurId} onChange={(e) => updateContrat(v._id, 'chauffeurId', e.target.value)} style={{ padding: '8px 12px', fontSize: '0.875rem', width: '100%' }}>
+                            <option value="">— Aucun (assigner plus tard) —</option>
+                            {chauffeurs.map((ch) => (
+                              <option key={ch._id} value={ch._id} disabled={ch.estOccupe}>
+                                {ch.nom}{ch.estOccupe ? ' (en mission)' : ch.aReservationAVenir ? ' (mission à venir)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -5,67 +5,83 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface VehiculeDisponible {
-  _id: string; marque: string; modele: string; annee: number; prixParJour: number; prixParHeure?: number; photos: string[];
+  _id: string; marque: string; modele: string; annee: number;
+  prixParJour: number; prixParHeure?: number; photos: string[];
+  statut: 'disponible' | 'loue' | 'maintenance';
+}
+interface ChauffeurDisponible {
+  _id: string; nom: string; telephone: string;
+  estOccupe: boolean; aReservationAVenir: boolean;
 }
 interface LigneContrat {
-  vehiculeId: string;
-  prixParJour: string;
-  prixParHeure: string;
-  avecChauffeur: boolean;
+  vehiculeId: string; prixParJour: string; prixParHeure: string;
+  avecChauffeur: boolean; chauffeurId: string;
 }
+
+const BADGE_STATUT: Record<string, { label: string; bg: string; color: string }> = {
+  loue:        { label: 'Loué',        bg: '#FEF3C7', color: '#92400E' },
+  maintenance: { label: 'Maintenance', bg: '#FEE2E2', color: '#991B1B' },
+  disponible:  { label: 'Disponible',  bg: '#D1FAE5', color: '#065F46' },
+};
 
 export default function PageNouveauCorporate() {
   const router = useRouter();
   const [vehicules, setVehicules] = useState<VehiculeDisponible[]>([]);
+  const [chauffeurs, setChauffeurs] = useState<ChauffeurDisponible[]>([]);
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [contrats, setContrats] = useState<Record<string, LigneContrat>>({});
 
   useEffect(() => {
-    fetch('/api/vehicules?limite=50').then((r) => r.json())
-      .then((j) => { if (j.success) setVehicules(j.data.vehicules ?? j.data); })
+    fetch('/api/gerant/business/disponibilites').then((r) => r.json())
+      .then((j) => {
+        if (j.success) {
+          setVehicules(j.data.vehicules ?? []);
+          setChauffeurs(j.data.chauffeurs ?? []);
+        }
+      })
       .finally(() => setChargement(false));
   }, []);
 
   function toggleVehicule(v: VehiculeDisponible) {
+    if (v.statut !== 'disponible') return;
     setContrats((prev) => {
       if (prev[v._id]) {
-        const next = { ...prev };
-        delete next[v._id];
-        return next;
+        const next = { ...prev }; delete next[v._id]; return next;
       }
-      return { ...prev, [v._id]: { vehiculeId: v._id, prixParJour: String(v.prixParJour), prixParHeure: v.prixParHeure ? String(v.prixParHeure) : '', avecChauffeur: false } };
+      return { ...prev, [v._id]: { vehiculeId: v._id, prixParJour: String(v.prixParJour), prixParHeure: v.prixParHeure ? String(v.prixParHeure) : '', avecChauffeur: false, chauffeurId: '' } };
     });
   }
 
   function updateContrat(vehiculeId: string, champ: keyof LigneContrat, valeur: string | boolean) {
-    setContrats((prev) => ({ ...prev, [vehiculeId]: { ...prev[vehiculeId], [champ]: valeur } }));
+    setContrats((prev) => {
+      const ligne = { ...prev[vehiculeId], [champ]: valeur };
+      if (champ === 'avecChauffeur' && valeur === false) ligne.chauffeurId = '';
+      return { ...prev, [vehiculeId]: ligne };
+    });
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur('');
     const form = new FormData(e.currentTarget);
-
     const contratsValides = Object.values(contrats).filter((c) => Number(c.prixParJour) > 0);
     if (contratsValides.length === 0) { setErreur('Sélectionnez au moins un véhicule et renseignez son tarif.'); return; }
-
     setEnvoi(true);
     try {
       const res = await fetch('/api/gerant/business', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nom:        form.get('nom'),
-          email:      form.get('email'),
-          telephone:  form.get('telephone'),
-          motDePasse: form.get('motDePasse'),
+          nom: form.get('nom'), email: form.get('email'),
+          telephone: form.get('telephone'), motDePasse: form.get('motDePasse'),
           contrats: contratsValides.map((c) => ({
-            vehicule:      c.vehiculeId,
-            prixParJour:   Number(c.prixParJour),
-            prixParHeure:  c.prixParHeure ? Number(c.prixParHeure) : null,
+            vehicule: c.vehiculeId,
+            prixParJour: Number(c.prixParJour),
+            prixParHeure: c.prixParHeure ? Number(c.prixParHeure) : null,
             avecChauffeur: c.avecChauffeur,
+            chauffeur: c.chauffeurId || null,
           })),
         }),
       });
@@ -80,13 +96,14 @@ export default function PageNouveauCorporate() {
   }
 
   const nbSelectionnes = Object.keys(contrats).length;
+  const chauffeursLibres = chauffeurs.filter((c) => !c.estOccupe);
 
   return (
     <div className="container" style={{ maxWidth: '900px' }}>
       <div style={{ marginBottom: '24px' }}>
         <Link href="/gerant/business" style={{ color: 'var(--gris)', textDecoration: 'none', fontSize: '0.875rem' }}>← Clients Corporate</Link>
         <h1 style={{ margin: '12px 0 4px' }}>Nouveau client corporate</h1>
-        <p style={{ margin: 0, color: 'var(--gris)', fontSize: '0.875rem' }}>Créez le compte et définissez les véhicules et tarifs négociés.</p>
+        <p style={{ margin: 0, color: 'var(--gris)', fontSize: '0.875rem' }}>Créez le compte et définissez les véhicules, tarifs et chauffeurs négociés.</p>
       </div>
 
       {erreur && <div className="erreur">{erreur}</div>}
@@ -126,30 +143,37 @@ export default function PageNouveauCorporate() {
             )}
           </div>
 
-          {chargement && <p style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>Chargement des véhicules...</p>}
+          {chargement && <p style={{ color: 'var(--gris)', fontSize: '0.875rem' }}>Chargement...</p>}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {vehicules.map((v) => {
               const selectionne = !!contrats[v._id];
               const c = contrats[v._id];
+              const disponible = v.statut === 'disponible';
+              const badge = BADGE_STATUT[v.statut];
               return (
-                <div key={v._id} style={{ border: `2px solid ${selectionne ? '#1B3B8A' : '#E5E7EB'}`, borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
-                  {/* En-tête véhicule */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: 'pointer', background: selectionne ? 'rgba(27,59,138,0.04)' : 'white' }} onClick={() => toggleVehicule(v)}>
+                <div key={v._id} style={{ border: `2px solid ${selectionne ? '#1B3B8A' : disponible ? '#E5E7EB' : '#F3F4F6'}`, borderRadius: '12px', overflow: 'hidden', opacity: disponible ? 1 : 0.55, transition: 'border-color 0.2s' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: disponible ? 'pointer' : 'not-allowed', background: selectionne ? 'rgba(27,59,138,0.04)' : 'white' }}
+                    onClick={() => toggleVehicule(v)}
+                  >
                     {v.photos?.[0] && <img src={v.photos[0]} alt="" style={{ width: '60px', height: '44px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />}
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: '0.9rem' }}>{v.marque} {v.modele} {v.annee}</p>
                       <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--gris)' }}>
-                        Tarif standard : {v.prixParJour.toLocaleString()} FCFA/jour
-                        {v.prixParHeure ? ` · ${v.prixParHeure.toLocaleString()} FCFA/h` : ''}
+                        Tarif standard : {v.prixParJour.toLocaleString()} FCFA/jour{v.prixParHeure ? ` · ${v.prixParHeure.toLocaleString()} FCFA/h` : ''}
                       </p>
                     </div>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: `2px solid ${selectionne ? '#1B3B8A' : '#D1D5DB'}`, background: selectionne ? '#1B3B8A' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
-                      {selectionne && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </div>
+                    <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: badge.bg, color: badge.color, marginRight: '8px', flexShrink: 0 }}>
+                      {badge.label}
+                    </span>
+                    {disponible && (
+                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: `2px solid ${selectionne ? '#1B3B8A' : '#D1D5DB'}`, background: selectionne ? '#1B3B8A' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
+                        {selectionne && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Champs tarifs — visible seulement si sélectionné */}
                   {selectionne && (
                     <div style={{ padding: '12px 16px 14px', background: 'rgba(27,59,138,0.03)', borderTop: '1px solid rgba(27,59,138,0.1)' }}>
                       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -163,8 +187,9 @@ export default function PageNouveauCorporate() {
                             <input type="number" min="0" value={c.prixParHeure} onChange={(e) => updateContrat(v._id, 'prixParHeure', e.target.value)} placeholder="ex : 8000" style={{ padding: '8px 12px', fontSize: '0.875rem' }} />
                           </div>
                         )}
+                        {/* Chauffeur inclus */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '150px' }}>
-                          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brun)' }}>Chauffeur inclus au contrat</label>
+                          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brun)' }}>Chauffeur inclus</label>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             {([{ val: false, label: 'Non' }, { val: true, label: 'Oui' }] as { val: boolean; label: string }[]).map(({ val, label }) => (
                               <button key={String(val)} type="button" onClick={() => updateContrat(v._id, 'avecChauffeur', val)}
@@ -174,6 +199,23 @@ export default function PageNouveauCorporate() {
                             ))}
                           </div>
                         </div>
+                        {/* Sélection chauffeur */}
+                        {c.avecChauffeur && (
+                          <div className="form-group" style={{ flex: 1, minWidth: '180px', marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.78rem' }}>Chauffeur assigné</label>
+                            <select value={c.chauffeurId} onChange={(e) => updateContrat(v._id, 'chauffeurId', e.target.value)} style={{ padding: '8px 12px', fontSize: '0.875rem', width: '100%' }}>
+                              <option value="">— Aucun (assigner plus tard) —</option>
+                              {chauffeurs.map((ch) => (
+                                <option key={ch._id} value={ch._id} disabled={ch.estOccupe}>
+                                  {ch.nom}{ch.estOccupe ? ' (en mission)' : ch.aReservationAVenir ? ' (mission à venir)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            {chauffeursLibres.length === 0 && (
+                              <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#EF4444' }}>Aucun chauffeur disponible actuellement</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

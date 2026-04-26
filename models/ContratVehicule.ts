@@ -6,6 +6,7 @@ export interface IContratVehicule extends Document {
   prixParJour: number;
   prixParHeure?: number | null;
   avecChauffeur: boolean;
+  chauffeur?: mongoose.Types.ObjectId | null;
   actif: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,7 @@ const contratVehiculeSchema = new Schema<IContratVehicule>(
     prixParJour:   { type: Number, required: true, min: 0 },
     prixParHeure:  { type: Number, default: null,  min: 0 },
     avecChauffeur: { type: Boolean, default: false },
+    chauffeur:     { type: Schema.Types.ObjectId, ref: 'User', default: null },
     actif:         { type: Boolean, default: true },
   },
   { timestamps: true }

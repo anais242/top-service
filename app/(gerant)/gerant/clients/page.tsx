@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 interface Client {
@@ -118,7 +119,15 @@ export default function PageClients() {
                   {c.nom[0].toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: '0.95rem' }}>{c.nom}</p>
+                  <Link
+                    href={`/gerant/clients/${c._id}/historique`}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ margin: '0 0 2px', fontWeight: 700, fontSize: '0.95rem', color: '#1B3B8A', textDecoration: 'none', display: 'inline-block' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                  >
+                    {c.nom}
+                  </Link>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--gris)' }}>{c.telephone} · {c.email}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>

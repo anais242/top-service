@@ -74,13 +74,39 @@ const LIENS: { href: string; label: string; notifKey?: keyof Notifs; icone: Reac
   },
 ];
 
+const NOTIF_KEYS: (keyof Notifs)[] = ['reservations', 'clients'];
+const PAGE_NOTIF: Record<string, keyof Notifs> = {
+  '/gerant/reservations': 'reservations',
+  '/gerant/clients':      'clients',
+};
+const LS_KEY = (k: keyof Notifs) => `ts_vu_${k}`;
+
+function lireTimestamps(): Record<keyof Notifs, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const k of NOTIF_KEYS) out[k] = localStorage.getItem(LS_KEY(k));
+  return out as Record<keyof Notifs, string | null>;
+}
+
 export default function SidebarGerant() {
   const pathname = usePathname();
   const [notifs, setNotifs] = useState<Notifs>({ reservations: 0, clients: 0 });
 
+  // Quand le gérant visite une page avec notif, on marque comme "vu"
+  useEffect(() => {
+    const cle = Object.entries(PAGE_NOTIF).find(([page]) => pathname.startsWith(page))?.[1];
+    if (cle) {
+      localStorage.setItem(LS_KEY(cle), new Date().toISOString());
+      setNotifs((prev) => ({ ...prev, [cle]: 0 }));
+    }
+  }, [pathname]);
+
   useEffect(() => {
     function charger() {
-      fetch('/api/gerant/notifications')
+      const ts = lireTimestamps();
+      const params = new URLSearchParams();
+      if (ts.reservations) params.set('depuis_reservations', ts.reservations);
+      if (ts.clients)      params.set('depuis_clients',      ts.clients);
+      fetch(`/api/gerant/notifications?${params}`)
         .then((r) => r.json())
         .then((j) => { if (j.success) setNotifs(j.data); })
         .catch(() => {});

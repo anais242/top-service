@@ -6,6 +6,7 @@ import { verifierAccessToken } from '@/lib/auth/jwt';
 import { COOKIE_ACCESS } from '@/lib/auth/cookies';
 import { v2 as cloudinary } from 'cloudinary';
 import type { ApiResponse } from '@/types';
+import { logActivite } from '@/lib/activite';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -53,6 +54,13 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const champ = side === 'recto' ? 'permisRecto' : 'permisVerso';
     const user = await User.findByIdAndUpdate(payload.userId, { [champ]: url }, { new: true }).select('permisRecto permisVerso').lean();
+
+    logActivite({
+      clientId: payload.userId,
+      type:     'permis',
+      action:   side === 'recto' ? 'permis_recto' : 'permis_verso',
+      detail:   `Permis ${side} téléversé`,
+    }).catch(() => {});
 
     return NextResponse.json<ApiResponse>({ success: true, data: { permisRecto: user?.permisRecto, permisVerso: user?.permisVerso } });
   } catch (error) {

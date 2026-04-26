@@ -6,8 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import OverlayProfil from './OverlayProfil';
 
 const LIENS = [
-  { href: '/vehicules',           label: 'Nos véhicules' },
-  { href: '/client/reservations', label: 'Mes réservations' },
+  { href: '/vehicules',              label: 'Nos véhicules' },
+  { href: '/client/reservations',    label: 'Mes réservations' },
+  { href: '/client/historique',      label: 'Historique' },
   { href: '/client/tableau-de-bord', label: 'Tableau de bord' },
 ];
 

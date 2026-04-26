@@ -8,6 +8,7 @@ import { verifierAccessToken } from '@/lib/auth/jwt';
 import { COOKIE_ACCESS } from '@/lib/auth/cookies';
 import type { ApiResponse } from '@/types';
 import { envoyerEmailReservationClient, envoyerEmailReservationGerant } from '@/lib/emails/resend';
+import { logActivite } from '@/lib/activite';
 import User from '@/models/User';
 import ContratVehicule from '@/models/ContratVehicule';
 import { CHAUFFEUR_JOUR, tarifChauffeur } from '@/lib/tarifs';
@@ -144,6 +145,14 @@ export async function POST(req: NextRequest) {
         fmt(dateDebut), fmt(dateFin), nombreJours, prixTotal, reservation._id.toString()
       ).catch((e) => console.error('[email réservation gérant]', e));
     }
+
+    logActivite({
+      clientId:  payload.userId,
+      type:      'reservation',
+      action:    'reservation_creee',
+      detail:    `${vehicule.marque} ${vehicule.modele} — ${typeLocation === 'heure' ? `${(validation.data as { nombreHeures: number }).nombreHeures}h` : `${nombreJours} jour${nombreJours > 1 ? 's' : ''}`} — ${prixTotal.toLocaleString('fr-FR')} FCFA`,
+      reference: reservation._id.toString(),
+    }).catch(() => {});
 
     return NextResponse.json<ApiResponse>({ success: true, data: reservationPeuplee }, { status: 201 });
   } catch (error) {

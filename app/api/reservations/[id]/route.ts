@@ -8,6 +8,7 @@ import type { ApiResponse } from '@/types';
 import User from '@/models/User';
 import Vehicule from '@/models/Vehicule';
 import { envoyerEmailStatutReservation } from '@/lib/emails/resend';
+import { logActivite } from '@/lib/activite';
 import ContratVehicule from '@/models/ContratVehicule';
 import { CHAUFFEUR_JOUR, tarifChauffeur } from '@/lib/tarifs';
 
@@ -206,6 +207,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       if (body.statut !== 'annulee' || reservation.statut !== 'en_attente')
         return NextResponse.json<ApiResponse>({ success: false, message: 'Annulation impossible' }, { status: 400 });
       reservation.statut = 'annulee';
+      // Log annulation client — après save()
+      const _logAnnulation = async () => {
+        const v = await Vehicule.findById(reservation.vehicule).select('marque modele').lean();
+        const nom = v ? `${v.marque} ${v.modele}` : 'Véhicule';
+        logActivite({ clientId: payload.userId, type: 'reservation', action: 'reservation_annulee', detail: `${nom} — annulée par vous`, reference: params.id }).catch(() => {});
+      };
+      _logAnnulation();
     } else {
       return NextResponse.json<ApiResponse>({ success: false, message: 'Accès refusé' }, { status: 403 });
     }
@@ -215,6 +223,31 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       { path: 'vehicule', select: 'marque modele annee photos' },
       { path: 'chauffeur', select: 'nom' },
     ]);
+
+    // Log activité client pour les changements de statut par le gérant
+    if (payload.role === 'gerant' && body.statut && ['confirmee', 'refusee', 'annulee', 'terminee'].includes(body.statut)) {
+      const actionMap: Record<string, string> = {
+        confirmee: 'reservation_confirmee',
+        refusee:   'reservation_refusee',
+        annulee:   'reservation_annulee',
+        terminee:  'reservation_terminee',
+      };
+      const labelMap: Record<string, string> = {
+        confirmee: 'confirmée par le gérant',
+        refusee:   'refusée par le gérant',
+        annulee:   'annulée par le gérant',
+        terminee:  'clôturée',
+      };
+      const vNom = await Vehicule.findById(reservation.vehicule).select('marque modele').lean();
+      const nomV = vNom ? `${vNom.marque} ${vNom.modele}` : 'Véhicule';
+      logActivite({
+        clientId:  reservation.client.toString(),
+        type:      'reservation',
+        action:    actionMap[body.statut] as never,
+        detail:    `${nomV} — ${labelMap[body.statut]}`,
+        reference: params.id,
+      }).catch(() => {});
+    }
 
     // Email au client si confirmée ou refusée
     if (payload.role === 'gerant' && ['confirmee', 'refusee'].includes(body.statut)) {

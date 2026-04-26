@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-const LIENS = [
+interface Notifs { reservations: number; clients: number; }
+
+const LIENS: { href: string; label: string; notifKey?: keyof Notifs; icone: React.ReactNode }[] = [
   {
     href: '/gerant/tableau-de-bord',
     label: 'Tableau de bord',
@@ -28,6 +31,7 @@ const LIENS = [
   {
     href: '/gerant/reservations',
     label: 'Réservations',
+    notifKey: 'reservations',
     icone: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
@@ -48,6 +52,7 @@ const LIENS = [
   {
     href: '/gerant/clients',
     label: 'Clients',
+    notifKey: 'clients',
     icone: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -71,6 +76,19 @@ const LIENS = [
 
 export default function SidebarGerant() {
   const pathname = usePathname();
+  const [notifs, setNotifs] = useState<Notifs>({ reservations: 0, clients: 0 });
+
+  useEffect(() => {
+    function charger() {
+      fetch('/api/gerant/notifications')
+        .then((r) => r.json())
+        .then((j) => { if (j.success) setNotifs(j.data); })
+        .catch(() => {});
+    }
+    charger();
+    const interval = setInterval(charger, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <nav style={{
@@ -87,8 +105,9 @@ export default function SidebarGerant() {
       zIndex: 10,
       boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
     }}>
-      {LIENS.map(({ href, label, icone }) => {
-        const actif = pathname.startsWith(href);
+      {LIENS.map(({ href, label, icone, notifKey }) => {
+        const actif  = pathname.startsWith(href);
+        const count  = notifKey ? notifs[notifKey] : 0;
         return (
           <Link key={href} href={href} style={{
             display: 'flex',
@@ -103,9 +122,25 @@ export default function SidebarGerant() {
             borderBottom: actif ? '2px solid #1B3B8A' : '2px solid transparent',
             transition: 'all 0.15s',
             whiteSpace: 'nowrap',
+            position: 'relative',
           }}>
             <span style={{ flexShrink: 0, opacity: actif ? 1 : 0.7 }}>{icone}</span>
             {label}
+            {count > 0 && (
+              <span style={{
+                background: '#ef4444',
+                color: 'white',
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                lineHeight: 1,
+                padding: '2px 5px',
+                borderRadius: '10px',
+                minWidth: '16px',
+                textAlign: 'center',
+              }}>
+                {count > 99 ? '99+' : count}
+              </span>
+            )}
           </Link>
         );
       })}

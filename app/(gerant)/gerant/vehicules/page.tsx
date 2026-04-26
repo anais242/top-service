@@ -69,6 +69,19 @@ function PageVehiculesGerantInner() {
     } else { alert(json.message); }
   }
 
+  async function tousVisibilite(visible: boolean) {
+    const cible = vehicules.filter((v) => v.visible !== visible);
+    if (cible.length === 0) return;
+    const label = visible ? 'Remettre tous les véhicules en ligne ?' : 'Masquer tous les véhicules du catalogue ?';
+    if (!confirm(label)) return;
+    await Promise.all(
+      cible.map((v) =>
+        fetch(`/api/vehicules/${v._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visible }) })
+      )
+    );
+    setVehicules((prev) => prev.map((x) => ({ ...x, visible })));
+  }
+
   async function supprimer(id: string, nom: string) {
     if (!confirm(`Supprimer ${nom} ?`)) return;
     const res = await fetch(`/api/vehicules/${id}`, { method: 'DELETE' });
@@ -104,9 +117,21 @@ function PageVehiculesGerantInner() {
           </Link>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <h1 style={{ margin: 0 }}>Parc automobile</h1>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => tousVisibilite(false)}
+            style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fef9c3', color: '#713f12', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+          >
+            Tout masquer
+          </button>
+          <button
+            onClick={() => tousVisibilite(true)}
+            style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#dcfce7', color: '#166534', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+          >
+            Tout afficher
+          </button>
           <Link href="/gerant/tableau-de-bord" style={{ color: '#6b7280', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
             ← Tableau de bord
           </Link>

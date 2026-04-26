@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 export default function PageInscription() {
   const router = useRouter();
@@ -90,6 +91,7 @@ export default function PageInscription() {
           <button type="submit" className="btn" style={{ width: '100%', marginTop: '8px' }} disabled={chargement}>
             {chargement ? 'Création...' : 'Créer mon compte →'}
           </button>
+          {chargement && <LoaderVoiture texte="Création du compte..." />}
         </form>
 
         <div className="lien">

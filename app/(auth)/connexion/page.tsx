@@ -3,6 +3,7 @@
 import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import LoaderVoiture from '@/app/components/LoaderVoiture';
 
 function FormulaireConnexion() {
   const router = useRouter();
@@ -73,6 +74,7 @@ function FormulaireConnexion() {
           <button type="submit" className="btn" style={{ width: '100%', marginTop: '8px' }} disabled={chargement}>
             {chargement ? 'Connexion...' : 'Se connecter →'}
           </button>
+          {chargement && <LoaderVoiture texte="Connexion en cours..." />}
         </form>
 
         <div className="lien">

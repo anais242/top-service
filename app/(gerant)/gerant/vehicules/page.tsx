@@ -11,6 +11,7 @@ interface Vehicule {
   kilometrage: number; carburant: string; transmission: string; nombrePlaces: number;
   description?: string;
   statut: 'disponible' | 'loue' | 'maintenance';
+  visible: boolean;
   photos: string[];
   chauffeurDisponible?: boolean;
 }
@@ -57,6 +58,15 @@ function PageVehiculesGerantInner() {
       }
     } catch { setErreur('Impossible de charger les véhicules'); }
     finally { setChargement(false); }
+  }
+
+  async function toggleVisibilite(v: Vehicule) {
+    const res  = await fetch(`/api/vehicules/${v._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visible: !v.visible }) });
+    const json = await res.json();
+    if (json.success) {
+      setVehicules((prev) => prev.map((x) => x._id === v._id ? { ...x, visible: json.data.visible } : x));
+      setOverlay((prev) => prev?._id === v._id ? { ...prev, visible: json.data.visible } : prev);
+    } else { alert(json.message); }
   }
 
   async function supprimer(id: string, nom: string) {
@@ -165,6 +175,9 @@ function PageVehiculesGerantInner() {
 
               {/* Badges statut */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', flexShrink: 0 }}>
+                {!v.visible && (
+                  <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>Masqué</span>
+                )}
                 <span style={{ background: s.bg, color: s.color, padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>{s.label}</span>
                 <span style={{ background: d.bg, color: d.color, padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>{d.label}</span>
               </div>
@@ -199,7 +212,10 @@ function PageVehiculesGerantInner() {
                     <h2 style={{ margin: '0 0 4px' }}>{overlay.marque} {overlay.modele}</h2>
                     <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{overlay.annee}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {!overlay.visible && (
+                      <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>Masqué</span>
+                    )}
                     <span style={{ background: s.bg, color: s.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>{s.label}</span>
                     <span style={{ background: d.bg, color: d.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>{d.label}</span>
                   </div>
@@ -250,7 +266,13 @@ function PageVehiculesGerantInner() {
                 )}
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => toggleVisibilite(overlay)}
+                    style={{ flex: 1, padding: '10px', background: overlay.visible ? '#fef9c3' : '#dcfce7', color: overlay.visible ? '#713f12' : '#166534', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
+                  >
+                    {overlay.visible ? 'Masquer du catalogue' : 'Remettre en ligne'}
+                  </button>
                   <button
                     onClick={() => router.push(`/gerant/vehicules/${overlay._id}/modifier`)}
                     style={{ flex: 1, padding: '10px', background: '#f3f4f6', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}

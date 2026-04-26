@@ -18,8 +18,13 @@ export async function GET(req: NextRequest) {
     const page   = Math.max(1, parseInt(searchParams.get('page') ?? '1'));
     const limite = Math.min(50, parseInt(searchParams.get('limite') ?? '12'));
 
+    const token = req.cookies.get(COOKIE_ACCESS)?.value;
+    const payload = token ? await verifierAccessToken(token) : null;
+    const estGerant = payload?.role === 'gerant';
+
     const filtre: Record<string, unknown> = {};
     if (statut) filtre.statut = statut;
+    if (!estGerant) filtre.visible = true;
 
     const total = await Vehicule.countDocuments(filtre);
     const vehicules = await Vehicule.find(filtre)

@@ -14,11 +14,16 @@ function estGerant(req: NextRequest) {
 }
 
 // GET /api/vehicules/[id]
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB();
     const vehicule = await Vehicule.findById(params.id).lean();
     if (!vehicule) return NextResponse.json<ApiResponse>({ success: false, message: 'Véhicule introuvable' }, { status: 404 });
+
+    const gerant = await estGerant(req);
+    if (!vehicule.visible && !gerant)
+      return NextResponse.json<ApiResponse>({ success: false, message: 'Véhicule introuvable' }, { status: 404 });
+
     return NextResponse.json<ApiResponse>({ success: true, data: vehicule });
   } catch (error) {
     console.error('[GET /api/vehicules/[id]]', error);

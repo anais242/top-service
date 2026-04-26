@@ -22,6 +22,7 @@ export interface IVehicule extends Document {
   description: string;
   photos: string[];
   statut: StatutVehicule;
+  visible: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +45,7 @@ const vehiculeSchema = new Schema<IVehicule>(
     prixChauffeurParJour:  { type: Number, min: 0, default: null },
     photos:        { type: [String], default: [] },
     statut:        { type: String, enum: ['disponible', 'loue', 'maintenance'], default: 'disponible' },
+    visible:       { type: Boolean, default: true },
   },
   { timestamps: true }
 );

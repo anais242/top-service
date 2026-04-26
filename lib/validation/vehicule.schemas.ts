@@ -16,6 +16,7 @@ export const schemaVehicule = z.object({
   nombrePlaces:        z.number().int().min(1).max(20),
   description:         z.string().max(1000).trim().optional().default(''),
   statut:              z.enum(['disponible', 'loue', 'maintenance']).optional().default('disponible'),
+  visible:             z.boolean().optional().default(true),
 });
 
 export type VehiculeInput = z.infer<typeof schemaVehicule>;

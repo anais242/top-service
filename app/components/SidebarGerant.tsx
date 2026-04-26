@@ -86,7 +86,7 @@ export default function SidebarGerant() {
         .catch(() => {});
     }
     charger();
-    const interval = setInterval(charger, 30_000);
+    const interval = setInterval(charger, 15_000);
     return () => clearInterval(interval);
   }, []);
 
